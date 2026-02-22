@@ -1,0 +1,73 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  BOTH
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  BLOCKED
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model users {
+  user_id                    String                 @id @default(uuid()) @map("_id")
+  user_full_name             String?
+  user_email                 String?
+  user_primary_country_id    String?
+  user_primary_phone         String
+  user_gender                Gender?
+  user_password              String?
+  user_role                  Role                   @default(USER)
+  user_admin_status          ApprovalStatus         @default(PENDING)
+  user_email_verified        Boolean                @default(false)
+  user_phone_verified        Boolean                @default(false)
+  user_bio                   String?                @db.LongText
+  user_dob                   DateTime?
+  user_active                Boolean?               @default(true)
+  user_profile_image_file_id String?
+  user_selfie_file_id        String?
+  user_created_at            DateTime               @default(now())
+  user_updated_at            DateTime               @updatedAt
+  is_private_user            Boolean?               @default(false)
+  @@fulltext([user_full_name, user_email])
+}
+
+model sms_otp {
+  so_id           String   @id @default(uuid())
+  so_user_id      String?
+  so_country_code String
+  so_receiver     String
+  so_token        String
+  so_is_expired   Boolean  @default(false)
+  so_created_at   DateTime @default(now())
+  so_updated_at   DateTime @updatedAt
+}
+
+model email_otp {
+  eo_id         String   @id @default(uuid())
+  eo_user_id    String?
+  eo_sender     String
+  eo_receiver   String
+  eo_token      String
+  eo_is_expired Boolean  @default(false)
+  eo_created_at DateTime @default(now())
+  eo_updated_at DateTime @updatedAt
+}

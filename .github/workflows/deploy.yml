@@ -1,0 +1,40 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches:
+      - dev # Change to your default branch if different
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Ensure .ssh directory exists
+        run: mkdir -p ~/.ssh
+
+      - name: Add EC2 host key to known_hosts
+        run: ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to EC2
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          EC2_USER: ubuntu # Change to your EC2 username
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          echo "$SSH_PRIVATE_KEY" > private_key.pem
+          chmod 600 private_key.pem
+          ssh -i private_key.pem $EC2_USER@$EC2_HOST << 'EOF'
+            cd dc-auth-service
+            git pull
+            npm install --production
+            npx prisma generate
+            tsc
+            pm2 restart auth-service  # Assumes you use PM2 to manage your Node.js process
+          EOF
