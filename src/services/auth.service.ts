@@ -93,9 +93,11 @@ class AuthService {
       user_details,
       user_details
     );
-    console.log(user, "user in signIn method of auth service");
     if (!user) {
       throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.USER_DELETED);
+    }
+    if(user?.user_admin_status === ApprovalStatus.PENDING){
+      throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.ADMIN_APPROVAL_PENDING);
     }
     const isPasswordValid = await isPasswordCorrect(
       password,

@@ -134,6 +134,7 @@ class UserRepository {
             user_email_verified: true,
             user_password: true,
             user_selfie_file_id: true,
+            user_admin_status: true,
           },
         })
     );

@@ -60,6 +60,9 @@ export const SIGN_IN_RESPONSE = {
 
 export const API_ERRORS = {
   ROUTE_NOT_FOUND: "Route not found",
+  ADMIN_APPROVAL_PENDING: "Your profile is under review, please wait for approval.",
+  USER_REJECTED: "Your account is rejected by the admin. please fill verification form again with valid details",
+  USER_BLOCKED: "Your account is blocked by the admin. you can appeal for to unblock your account",
   UNAUTHORIZED: "Unauthorized. please provide valid token",
   ALL_FIELDS_REQUIRED: "All field are required",
   DATABASE_ERROR: "Database error",
@@ -131,15 +134,3 @@ export const EMAIL_OTP_RESPONSE: { [key: string]: string } = {
 export const AUTH_SERVICE = `${process.env.API_URL}/auth`;
 
 export const JWKS_FOLDER = "/.well-known/jwks.json";
-SIGNUP: "/signup",
-  USER_DETAILS: "/user-detail/:user_id",
-    SIGN_IN: "/signin",
-      SEND_PHONE_OTP: "/send-phone-otp",
-        SEND_EMAIL_OTP: "/send-email-otp",
-          UPDATE_PHONE: "/update-phone",
-            UPDATE_EMAIL: "/update-email",
-              VERIFY_PHONE: "/verify-phone",
-                VERIFY_EMAIL: "/verify-email",
-                  VERIFY_USER: "/verify-user",
-                    FORGET_PASSWORD: "/forget-password",
-                      RESET_PASSWORD: "/reset-password",
