@@ -1,0 +1,374 @@
+==============================================================================
+                    AUTH SERVICE - API TEST EXAMPLES
+              Base URL: http://localhost:8000/auth
+==============================================================================
+
+
+=========================
+1. SIGNUP  (POST /auth/signup)
+=========================
+
+--- Example 1: Basic signup ---
+curl -X POST http://localhost:8000/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "full_name": "John Doe",
+    "email": "johndoe@example.com",
+    "password": "SecurePass@123",
+    "country_id": "91",
+    "phone": "9876543210",
+    "gender": "MALE"
+  }'
+
+--- Example 2: Female user signup ---
+curl -X POST http://localhost:8000/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "full_name": "Jane Smith",
+    "email": "janesmith@gmail.com",
+    "password": "MyStr0ng!Pass",
+    "country_id": "91",
+    "phone": "8765432109",
+    "gender": "FEMALE"
+  }'
+
+--- Example 3: Signup with referred_by ---
+curl -X POST http://localhost:8000/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "full_name": "Ravi Kumar",
+    "email": "ravikumar@yahoo.com",
+    "password": "Ravi@2026!",
+    "country_id": "91",
+    "phone": "7654321098",
+    "gender": "MALE",
+    "referred_by": "3ebdd94c-7509-408d-8ff5-6261c37999a2"
+  }'
+
+
+=========================
+2. USER_DETAILS  (GET /auth/user-detail/:user_id)
+=========================
+
+--- Example 1: Fetch user by ID ---
+curl -X GET http://localhost:8000/auth/user-detail/3ebdd94c-7509-408d-8ff5-6261c37999a2
+
+--- Example 2: Fetch another user ---
+curl -X GET http://localhost:8000/auth/user-detail/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+
+--- Example 3: Fetch user with headers ---
+curl -X GET http://localhost:8000/auth/user-detail/f9e8d7c6-b5a4-3210-fedc-ba9876543210 \
+  -H "Content-Type: application/json"
+
+
+=========================
+3. SIGN_IN  (POST /auth/signin)
+=========================
+
+--- Example 1: Sign in with email ---
+curl -X POST http://localhost:8000/auth/signin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_details": "johndoe@example.com",
+    "password": "SecurePass@123"
+  }'
+
+--- Example 2: Sign in with phone number ---
+curl -X POST http://localhost:8000/auth/signin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_details": "9876543210",
+    "password": "MyStr0ng!Pass"
+  }'
+
+--- Example 3: Sign in with device info ---
+curl -X POST http://localhost:8000/auth/signin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_details": "janesmith@gmail.com",
+    "password": "MyStr0ng!Pass",
+    "device_name": "Samsung Galaxy S24",
+    "device_type": "ANDROID",
+    "fcm_token": "dFjK3mS9xT0:APA91bHxZ..."
+  }'
+
+
+=========================
+4. SEND_PHONE_OTP  (POST /auth/send-phone-otp)
+=========================
+
+--- Example 1: Send OTP for registration ---
+curl -X POST http://localhost:8000/auth/send-phone-otp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "9876543210",
+    "type": "REGISTER"
+  }'
+
+--- Example 2: Send OTP for sign-in ---
+curl -X POST http://localhost:8000/auth/send-phone-otp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "8765432109",
+    "type": "SIGNIN"
+  }'
+
+--- Example 3: Send OTP with default type ---
+curl -X POST http://localhost:8000/auth/send-phone-otp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "7654321098",
+    "type": "default"
+  }'
+
+
+=========================
+5. SEND_EMAIL_OTP  (POST /auth/send-email-otp)
+=========================
+
+--- Example 1: Send email OTP for registration ---
+curl -X POST http://localhost:8000/auth/send-email-otp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "johndoe@example.com",
+    "type": "REGISTER"
+  }'
+
+--- Example 2: Send email OTP for sign-in ---
+curl -X POST http://localhost:8000/auth/send-email-otp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "janesmith@gmail.com",
+    "type": "SIGNIN"
+  }'
+
+--- Example 3: Send email OTP with default type ---
+curl -X POST http://localhost:8000/auth/send-email-otp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "ravikumar@yahoo.com",
+    "type": "default"
+  }'
+
+
+=========================
+6. UPDATE_PHONE  (PUT /auth/update-phone)
+=========================
+
+--- Example 1: Update phone number ---
+curl -X PUT http://localhost:8000/auth/update-phone \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "9999888877",
+    "country_id": "91"
+  }'
+
+--- Example 2: Update phone with different country ---
+curl -X PUT http://localhost:8000/auth/update-phone \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "2025551234",
+    "country_id": "1"
+  }'
+
+--- Example 3: Update phone (India) ---
+curl -X PUT http://localhost:8000/auth/update-phone \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "7777666655",
+    "country_id": "91"
+  }'
+
+
+=========================
+7. UPDATE_EMAIL  (PUT /auth/update-email)
+=========================
+
+--- Example 1: Update email address ---
+curl -X PUT http://localhost:8000/auth/update-email \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "newemail@example.com"
+  }'
+
+--- Example 2: Update to a Gmail address ---
+curl -X PUT http://localhost:8000/auth/update-email \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "john.updated@gmail.com"
+  }'
+
+--- Example 3: Update to a business email ---
+curl -X PUT http://localhost:8000/auth/update-email \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "jane@mybusiness.co.in"
+  }'
+
+
+=========================
+8. VERIFY_PHONE  (POST /auth/verify-phone)
+=========================
+
+--- Example 1: Verify phone with OTP ---
+curl -X POST http://localhost:8000/auth/verify-phone \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "9876543210",
+    "otp": "123456"
+  }'
+
+--- Example 2: Verify another phone ---
+curl -X POST http://localhost:8000/auth/verify-phone \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "8765432109",
+    "otp": "654321"
+  }'
+
+--- Example 3: Verify updated phone ---
+curl -X POST http://localhost:8000/auth/verify-phone \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "9999888877",
+    "otp": "111222"
+  }'
+
+
+=========================
+9. VERIFY_EMAIL  (POST /auth/verify-email)
+=========================
+
+--- Example 1: Verify email with OTP ---
+curl -X POST http://localhost:8000/auth/verify-email \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "johndoe@example.com",
+    "otp": "123456"
+  }'
+
+--- Example 2: Verify another email ---
+curl -X POST http://localhost:8000/auth/verify-email \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "janesmith@gmail.com",
+    "otp": "654321"
+  }'
+
+--- Example 3: Verify updated email ---
+curl -X POST http://localhost:8000/auth/verify-email \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "newemail@example.com",
+    "otp": "789012"
+  }'
+
+
+=========================
+10. VERIFY_USER  (GET /auth/verify-user)
+    [NOTE: This endpoint is currently commented out in routes]
+=========================
+
+--- Example 1: Verify user profile (with auth token) ---
+curl -X GET http://localhost:8000/auth/verify-user \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <YOUR_ACCESS_TOKEN>"
+
+--- Example 2: Verify user profile (alternate token) ---
+curl -X GET http://localhost:8000/auth/verify-user \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+--- Example 3: Verify user profile ---
+curl -X GET http://localhost:8000/auth/verify-user \
+  -H "Authorization: Bearer <YOUR_JWT_TOKEN>"
+
+
+=========================
+11. FORGET_PASSWORD  (POST /auth/forget-password)
+=========================
+
+--- Example 1: Forget password using email ---
+curl -X POST http://localhost:8000/auth/forget-password \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_details": "johndoe@example.com"
+  }'
+
+--- Example 2: Forget password using phone ---
+curl -X POST http://localhost:8000/auth/forget-password \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_details": "9876543210"
+  }'
+
+--- Example 3: Forget password using another email ---
+curl -X POST http://localhost:8000/auth/forget-password \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_details": "janesmith@gmail.com"
+  }'
+
+
+=========================
+12. RESET_PASSWORD  (PUT /auth/reset-password)
+=========================
+
+--- Example 1: Reset password with email ---
+curl -X PUT http://localhost:8000/auth/reset-password \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_details": "johndoe@example.com",
+    "password": "NewSecure@456",
+    "otp": "123456"
+  }'
+
+--- Example 2: Reset password with phone ---
+curl -X PUT http://localhost:8000/auth/reset-password \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_details": "9876543210",
+    "password": "AnotherStr0ng!Pass",
+    "otp": "654321"
+  }'
+
+--- Example 3: Reset password for another user ---
+curl -X PUT http://localhost:8000/auth/reset-password \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_details": "janesmith@gmail.com",
+    "password": "Jane@New2026",
+    "otp": "789012"
+  }'
+
+
+==============================================================================
+                              NOTES
+==============================================================================
+
+1. Replace <YOUR_ACCESS_TOKEN> / <YOUR_JWT_TOKEN> with actual JWT tokens
+   obtained after successful sign-in.
+
+2. Replace the UUIDs (e.g., 3ebdd94c-7509-408d-8ff5-6261c37999a2) with
+   actual user IDs from your database.
+
+3. Replace OTP values (e.g., 123456) with the actual OTPs received via
+   SMS or email.
+
+4. The VERIFY_USER endpoint is currently commented out in the routes file.
+   You need to uncomment it before testing.
+
+5. UPDATE_PHONE and UPDATE_EMAIL currently have auth middleware commented
+   out. In production, these should require authentication.
+
+6. The base URL assumes the server is running on port 8000.
+   Check your .env file or app.constant.ts for the actual port.
+
+7. For Windows CMD/PowerShell, replace backslash line continuations (\)
+   with backtick (`) or use a single line. Example for PowerShell:
+
+   curl -X POST http://localhost:8000/auth/signup `
+     -H "Content-Type: application/json" `
+     -d '{"full_name":"John Doe","email":"johndoe@example.com","password":"SecurePass@123","country_id":"91","phone":"9876543210","gender":"MALE"}'
+
+==============================================================================

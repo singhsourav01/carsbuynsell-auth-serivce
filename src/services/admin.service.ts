@@ -3,6 +3,7 @@ import { ApiError } from "common-microservices-utils";
 import { Request } from "express";
 import { StatusCodes } from "http-status-codes";
 import { API_ENDPOINTS, API_ERRORS, INTEGERS } from "../constants/app.constant";
+import { createUser } from "../api/user.api";
 import UserRepository from "../repositories/user.repository";
 import {
   getEmailBodyForChangingUserStatus,
@@ -55,15 +56,15 @@ class AdminService {
 
     const { user_profile_image_file_id, user_selfie_file_id, ...userData } =
       user;
-    const {  ...rest } = userData;
+    const { ...rest } = userData;
 
     return {
       ...rest,
       user_profile_image:
-        user_profile_image_file_id ,
-        // (await getFileById(user_profile_image_file_id))?.file_url,
-      user_selfie_image:user_selfie_file_id
-        // (await getFileById(user_selfie_file_id))?.file_url,
+        user_profile_image_file_id,
+      // (await getFileById(user_profile_image_file_id))?.file_url,
+      user_selfie_image: user_selfie_file_id
+      // (await getFileById(user_selfie_file_id))?.file_url,
     };
   };
 
@@ -74,7 +75,7 @@ class AdminService {
     req: Request
   ) => {
     let user;
-    console.log(user_id, status, reason , " check all")
+    console.log(user_id, status, reason, " check all")
     const userExist = await this.userRepository.getAllDetailsById(user_id);
     if (!userExist)
       throw new ApiError(
@@ -83,7 +84,20 @@ class AdminService {
       );
 
     if (status === ApprovalStatus.APPROVED) {
-      // user = await createUser({ ...userExist, locations }, req);
+      const token = req.header("authorization");
+      const userData = {
+        user_id: userExist.user_id,
+        user_full_name: userExist.user_full_name,
+        user_password: userExist.user_password,
+        user_email: userExist.user_email,
+        user_gender: userExist.user_gender,
+        user_profile_image_file_id: userExist.user_profile_image_file_id,
+        user_primary_country_id: userExist.user_primary_country_id,
+        user_primary_phone: userExist.user_primary_phone,
+        user_selfie_file_id: userExist.user_selfie_file_id,
+        user_admin_status: ApprovalStatus.APPROVED,
+      };
+      user = await createUser(userData, token);
       if (!user) {
         throw new ApiError(
           StatusCodes.INTERNAL_SERVER_ERROR,
