@@ -10,6 +10,7 @@ import {
   JWT_ALGORITHM,
   OTP_DIGITS,
 } from "../constants/app.constant";
+import axios from "axios";
 const secret = fs.readFileSync("./certs/private.pem");
 
 export const queryHandler = async <T>(
@@ -150,4 +151,16 @@ export const getEmailBodyForChangingUserStatus = (reason: string) => {
     BLOCKED: "Your account is blocked by the admin",
     NONE: "",
   };
+};
+
+export const handleAxiosError = (error: any) => {
+  if (axios.isAxiosError(error)) {
+    const statusCode = error.response?.status || 500;
+    const message =
+      error.response?.data?.message || "User service error";
+
+    throw new ApiError(statusCode, message);
+  }
+
+  throw new ApiError(500, "Unexpected error while calling user service");
 };

@@ -15,7 +15,7 @@ enum Gender {
   BOTH
 }
 
-enum ApprovalStatus {
+enum ApprovalStatus { 
   PENDING
   APPROVED
   REJECTED

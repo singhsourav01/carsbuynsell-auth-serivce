@@ -96,6 +96,9 @@ export const API_ERRORS = {
   USER_ALREADY_EXISTS_IN_USER_SERVICE: "User already exists in user service.",
   REFRESH_TOKEN_INVALID: "Invalid or revoked refresh token.",
   REFRESH_TOKEN_EXPIRED: "Refresh token has expired. Please login again.",
+  USER_PHONE_AND_EMAIL_NOT_VERIFIED: "User phone number and email are not verified. Please verify both to proceed.",
+  USER_EMAIL_NOT_VERIFIED: "User email is not verified. Please verify your email to proceed.",
+  USER_PHONE_NOT_VERIFIED: "User phone number is not verified. Please verify your phone to proceed.",
 };
 
 export const INTEGERS = {

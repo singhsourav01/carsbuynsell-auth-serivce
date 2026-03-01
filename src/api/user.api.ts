@@ -1,4 +1,5 @@
 import axios from "axios";
+import { handleAxiosError } from "../utils/helper";
 
 const USER_SERVICE_URL = process.env.USER_SERVICE_URL || "http://localhost:8001/user";
 
@@ -17,29 +18,39 @@ export const createUser = async (userData: any, token?: string) => {
 };
 
 export const getByPhone = async (phone: string, token?: string) => {
+  try {
     const { data } = await axios.get(
-        `${USER_SERVICE_URL}/users/${phone}`,
-        {
-            headers: {
-                "Content-Type": "application/json",
-                ...(token && { Authorization: token }),
-            },
-        }
+      `${USER_SERVICE_URL}/user-phone`,
+      {
+        params: { phone },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      }
     );
 
     return data?.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
 };
 
 export const getByEmail = async (email: string, token?: string) => {
+  try {
     const { data } = await axios.get(
-        `${USER_SERVICE_URL}/users/${email}`,
-        {
-            headers: {
-                "Content-Type": "application/json",
-                ...(token && { Authorization: token }),
-            },
-        }
+      `${USER_SERVICE_URL}/user-email`,
+      {
+        params: { email },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      }
     );
 
     return data?.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
 };
