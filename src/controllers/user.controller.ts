@@ -7,9 +7,8 @@ import OtpService from "../services/otp.service";
 import UserService from "../services/user.service";
 import { hashPassword } from "../utils/helper";
 import _ from "lodash";
-import { signupBodyPick } from "../constants/user.contant";
 import { createUser } from "../api/user.api";
-// import UserLocationsService from "../services/location.service";
+import UserPortfolioService from "../services/userPortfolio.service";
 
 export interface AuthenticatedRequest extends Request {
   user?: any;
@@ -17,19 +16,15 @@ export interface AuthenticatedRequest extends Request {
 
 class UserController {
   userService: UserService;
-  // userLocationsService: UserLocationsService;
+  userportfolioService: UserPortfolioService;
   otpService: OtpService;
 
   constructor() {
     this.userService = new UserService();
+    this.userportfolioService = new UserPortfolioService();
     this.otpService = new OtpService();
-    // this.userLocationsService = new UserLocationsService();
   }
 
-  /**
-   * After phone or email verification, check if BOTH are verified.
-   * If so, send user data to User Service.
-   */
   private sendToUserServiceIfFullyVerified = async (user_id: string) => {
     const user = await this.userService.getById(user_id);
     if (user.user_email_verified && user.user_phone_verified) {
@@ -45,7 +40,6 @@ class UserController {
         console.log(`User ${user_id} sent to user-service successfully`);
       } catch (error: any) {
         console.log(`User-service call failed for user ${user_id}:`, error?.response?.data || error.message);
-        // Don't throw — user-service may already have this user (duplicate)
       }
     }
   };
@@ -62,6 +56,7 @@ class UserController {
         user_gender: data.gender,
       },
     );
+    await this.userportfolioService.createPortfolio(user.user_id, data.portfolio_ids);
     await this.otpService.sendPhoneOtp(
       data.phone,
       data.country_id,

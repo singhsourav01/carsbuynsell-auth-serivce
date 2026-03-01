@@ -46,8 +46,18 @@ model users {
   user_selfie_file_id        String?
   user_created_at            DateTime               @default(now())
   user_updated_at            DateTime               @updatedAt
+  user_portfolio             user_portfolio[]
   is_private_user            Boolean?               @default(false)
   @@fulltext([user_full_name, user_email])
+}
+
+model user_portfolio {
+  up_id         String   @id @default(uuid()) @map("_id")
+  up_user_id    String
+  up_file_id    String
+  up_created_at DateTime @default(now())
+  up_updated_at DateTime @updatedAt
+  user          users    @relation(fields: [up_user_id], references: [user_id], onDelete: Cascade)
 }
 
 model sms_otp {
