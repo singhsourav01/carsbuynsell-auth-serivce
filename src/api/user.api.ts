@@ -15,3 +15,31 @@ export const createUser = async (userData: any, token?: string) => {
     );
     return data?.data;
 };
+
+export const getByPhone = async (phone: string, token?: string) => {
+    const { data } = await axios.get(
+        `${USER_SERVICE_URL}/users/${phone}`,
+        {
+            headers: {
+                "Content-Type": "application/json",
+                ...(token && { Authorization: token }),
+            },
+        }
+    );
+
+    return data?.data;
+};
+
+export const getByEmail = async (email: string, token?: string) => {
+    const { data } = await axios.get(
+        `${USER_SERVICE_URL}/users/${email}`,
+        {
+            headers: {
+                "Content-Type": "application/json",
+                ...(token && { Authorization: token }),
+            },
+        }
+    );
+
+    return data?.data;
+};

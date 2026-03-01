@@ -128,6 +128,7 @@ class UserRepository {
           },
           select: {
             user_id: true,
+            user_full_name: true,
             user_primary_phone: true,
             user_email: true,
             user_phone_verified: true,
@@ -135,6 +136,8 @@ class UserRepository {
             user_password: true,
             user_selfie_file_id: true,
             user_admin_status: true,
+            user_active: true,
+            user_role: true,
           },
         })
     );

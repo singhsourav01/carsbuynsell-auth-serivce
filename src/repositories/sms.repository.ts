@@ -25,6 +25,16 @@ class SmsRepository {
         })
     );
   };
+
+  incrementAttempts = async (so_id: string) => {
+    return queryHandler(
+      async () =>
+        await prisma.sms_otp.update({
+          where: { so_id },
+          data: { so_attempts: { increment: 1 } },
+        })
+    );
+  };
 }
 
 export default SmsRepository;

@@ -5,6 +5,7 @@ import {
   API_ERRORS,
   API_RESPONSES,
   EMAIL_OTP_RESPONSE,
+  MAX_OTP_ATTEMPTS,
   OTP_EXPIRY,
   PHONE_OTP_RESPONSE,
   STRINGS,
@@ -81,6 +82,7 @@ class OtpService {
         so_receiver: phone,
         so_user_id: user_id,
         so_token: otp,
+        so_expires_at: new Date(Date.now() + this.otpExpiry),
       });
     }
     return smsOtp;
@@ -212,14 +214,31 @@ class OtpService {
 
   getPhoneOtp = async (phone: string, otp: string) => {
     const phoneOtp = await this.smsRepository.getByPhone(phone);
-    if (otp !== phoneOtp?.so_token || !phoneOtp || phoneOtp?.so_is_expired) {
+    if (!phoneOtp) {
       throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.INVALID_OTP);
     }
-    if (
-      phoneOtp?.so_created_at &&
-      Date.now() - phoneOtp?.so_created_at.getTime() > this.otpExpiry
-    )
+    if (phoneOtp.so_is_used) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.OTP_ALREADY_USED);
+    }
+    if (phoneOtp.so_is_expired) {
       throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.OTP_EXPIRED);
+    }
+    if (
+      phoneOtp.so_expires_at &&
+      Date.now() > phoneOtp.so_expires_at.getTime()
+    ) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.OTP_EXPIRED);
+    }
+    if (phoneOtp.so_attempts >= MAX_OTP_ATTEMPTS) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.MAX_OTP_ATTEMPTS_EXCEEDED);
+    }
+    // Increment attempts
+    await this.smsRepository.incrementAttempts(phoneOtp.so_id);
+    if (otp !== phoneOtp.so_token) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.INVALID_OTP);
+    }
+    // Mark as used on success
+    await this.smsRepository.update(phoneOtp.so_id, { so_is_used: true });
     return phoneOtp;
   };
 

@@ -29,9 +29,11 @@ export const resetPasswordValidation = [
 export const refreshTokenValidations = [
   body("refresh_token")
     .notEmpty()
-    .withMessage("refresh_token is required field")
-    .custom((value) => {
-      console.log(value);
-    }),
-  body("uld_id").notEmpty().withMessage("uld_id is required field"),
+    .withMessage("refresh_token is required field"),
+];
+
+export const logoutValidations = [
+  body("refresh_token")
+    .notEmpty()
+    .withMessage("refresh_token is required field"),
 ];

@@ -21,7 +21,7 @@ export const API_ENDPOINTS = {
   VERIFY_USER: "/verify-user",
   FORGET_PASSWORD: "/forget-password",
   RESET_PASSWORD: "/reset-password",
-  LOGOUT: "/logout/:uld_id",
+  LOGOUT: "/logout",
   USERS: "/admin/users",
   USERS_BY_ID: "/admin/users/:user_id",
   USER_STATUS: "/admin/users/status/:user_id",
@@ -87,6 +87,15 @@ export const API_ERRORS = {
   USER_DELETED: "User has been deleted.",
   PHONE_EMAIL_VERIFIED:
     "Phone number and email have been verified. Please log in",
+  EMAIL_NOT_VERIFIED: "Email is not verified. Please verify your email first.",
+  PHONE_NOT_VERIFIED: "Phone is not verified. Please verify your phone first.",
+  USER_NOT_APPROVED: "Your account is not yet approved by the admin.",
+  USER_DEACTIVATED: "Your account has been deactivated.",
+  MAX_OTP_ATTEMPTS_EXCEEDED: "Maximum OTP attempts exceeded. Please request a new OTP.",
+  OTP_ALREADY_USED: "This OTP has already been used.",
+  USER_ALREADY_EXISTS_IN_USER_SERVICE: "User already exists in user service.",
+  REFRESH_TOKEN_INVALID: "Invalid or revoked refresh token.",
+  REFRESH_TOKEN_EXPIRED: "Refresh token has expired. Please login again.",
 };
 
 export const INTEGERS = {
@@ -100,6 +109,8 @@ export const ROLES = {
 };
 
 export const OTP_EXPIRY = 5 * 60 * 1000;
+
+export const MAX_OTP_ATTEMPTS = 5;
 
 export const OTP_DIGITS = 6;
 

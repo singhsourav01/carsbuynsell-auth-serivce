@@ -31,7 +31,7 @@ AuthRoutes.route(API_ENDPOINTS.RESET_PASSWORD).put(
   authController.resetPassword
 );
 
-// AuthRoutes.route(API_ENDPOINTS.LOGOUT).delete(authController.logout);
+AuthRoutes.route(API_ENDPOINTS.LOGOUT).post(authController.logout);
 
 // AuthRoutes.route(API_ENDPOINTS.REFRESH_TOKEN).put(authController.refreshToken);
 

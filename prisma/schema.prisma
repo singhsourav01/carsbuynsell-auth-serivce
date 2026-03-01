@@ -57,6 +57,9 @@ model sms_otp {
   so_receiver     String
   so_token        String
   so_is_expired   Boolean  @default(false)
+  so_expires_at   DateTime?
+  so_attempts     Int      @default(0)
+  so_is_used      Boolean  @default(false)
   so_created_at   DateTime @default(now())
   so_updated_at   DateTime @updatedAt
 }
@@ -70,4 +73,14 @@ model email_otp {
   eo_is_expired Boolean  @default(false)
   eo_created_at DateTime @default(now())
   eo_updated_at DateTime @updatedAt
+}
+
+model refresh_tokens {
+  rt_id         String   @id @default(uuid())
+  rt_user_id    String
+  rt_token      String   @db.Text
+  rt_is_revoked Boolean  @default(false)
+  rt_expires_at DateTime
+  rt_created_at DateTime @default(now())
+  rt_updated_at DateTime @updatedAt
 }

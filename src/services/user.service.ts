@@ -21,6 +21,7 @@ import UserRepository from "../repositories/user.repository";
 import { createUserType, updateUserType } from "../types/onboarding.types";
 import { generateAccessToken } from "../utils/helper";
 import { AuthenticatedRequest } from "../controllers/user.controller";
+import { getByEmail, getByPhone } from "../api/user.api";
 
 class UserService {
   userRepository: UserRepository;
@@ -76,11 +77,9 @@ class UserService {
       data.user_primary_phone
     );
     // If user already exits in user-service throw error
-    // const checkPhoneExists = await getByPhone(data.user_primary_phone);
-    // const checkEmailExists = await getByEmail(data.user_email);
+    const checkPhoneExists = await getByPhone(data.user_primary_phone);
+    const checkEmailExists = await getByEmail(data?.user_email || "");
 
-    const checkPhoneExists = false;
-    const checkEmailExists = false;
     if (checkEmailExists && checkPhoneExists)
       throw new ApiError(
         StatusCodes.BAD_REQUEST,

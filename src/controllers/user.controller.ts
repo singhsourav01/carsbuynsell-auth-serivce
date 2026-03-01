@@ -8,6 +8,7 @@ import UserService from "../services/user.service";
 import { hashPassword } from "../utils/helper";
 import _ from "lodash";
 import { signupBodyPick } from "../constants/user.contant";
+import { createUser } from "../api/user.api";
 // import UserLocationsService from "../services/location.service";
 
 export interface AuthenticatedRequest extends Request {
@@ -24,6 +25,30 @@ class UserController {
     this.otpService = new OtpService();
     // this.userLocationsService = new UserLocationsService();
   }
+
+  /**
+   * After phone or email verification, check if BOTH are verified.
+   * If so, send user data to User Service.
+   */
+  private sendToUserServiceIfFullyVerified = async (user_id: string) => {
+    const user = await this.userService.getById(user_id);
+    if (user.user_email_verified && user.user_phone_verified) {
+      try {
+        await createUser({
+          user_id: user.user_id,
+          user_full_name: user.user_full_name,
+          user_email: user.user_email,
+          user_primary_phone: user.user_primary_phone,
+          user_primary_country_id: user.user_primary_country_id,
+          user_admin_status: ApprovalStatus.PENDING,
+        });
+        console.log(`User ${user_id} sent to user-service successfully`);
+      } catch (error: any) {
+        console.log(`User-service call failed for user ${user_id}:`, error?.response?.data || error.message);
+        // Don't throw — user-service may already have this user (duplicate)
+      }
+    }
+  };
 
   signup = asyncHandler(async (req: Request, res: Response) => {
     const data = req.body
@@ -115,6 +140,10 @@ class UserController {
     const phoneOtp = await this.otpService.getPhoneOtp(phone, otp);
     const user = await this.userService.verifyPhone(userExist.user_id);
     await this.otpService.updateSms(phoneOtp.so_id, { so_is_expired: true });
+
+    // Check if both phone and email are verified → send to user-service
+    await this.sendToUserServiceIfFullyVerified(userExist.user_id);
+
     return res
       .status(StatusCodes.OK)
       .json(
@@ -128,6 +157,10 @@ class UserController {
     const emailOtp = await this.otpService.getEmailOtp(email, otp);
     const user = await this.userService.verifyEmail(userExist.user_id);
     await this.otpService.updateEmail(emailOtp.eo_id, { eo_is_expired: true });
+
+    // Check if both phone and email are verified → send to user-service
+    await this.sendToUserServiceIfFullyVerified(userExist.user_id);
+
     return res
       .status(StatusCodes.OK)
       .json(

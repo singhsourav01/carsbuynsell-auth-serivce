@@ -3,22 +3,13 @@ import { ApiError } from "common-microservices-utils";
 import { StatusCodes } from "http-status-codes";
 import jwt from "jsonwebtoken";
 import _ from "lodash";
-// import { getFileById } from "../api/file.api";
-// import {
-//   createUserDevice,
-//   getUserByEmailOrPhone,
-//   getUserDevice,
-//   resetPassword,
-//   updateUserDevice,
-// } from "../api/user.api";
 import { API_ERRORS } from "../constants/app.constant";
 import { nonApprovedUserPick } from "../constants/user.contant";
+import RefreshTokenRepository from "../repositories/refresh-token.repository";
 import UserRepository from "../repositories/user.repository";
 import {
   generateAccessToken,
   generateRefreshToken,
-  // generateAccessToken,
-  // generateRefreshToken,
   isPasswordCorrect,
   isValidEmail,
   isValidPhoneNumber,
@@ -38,10 +29,13 @@ class AuthService {
   userRepository: UserRepository;
   otpService: OtpService;
   userService: UserService;
+  refreshTokenRepository: RefreshTokenRepository;
+
   constructor() {
     this.userRepository = new UserRepository();
     this.otpService = new OtpService();
     this.userService = new UserService();
+    this.refreshTokenRepository = new RefreshTokenRepository();
   }
 
   generateSignInResponse = async (
@@ -51,8 +45,21 @@ class AuthService {
     fcm_token: string
   ) => {
     if (user.user_admin_status === ApprovalStatus.APPROVED) {
-      user.refresh_token = generateRefreshToken(user);
+      const refreshToken = generateRefreshToken(user);
       user.access_token = generateAccessToken(user);
+      user.refresh_token = refreshToken;
+
+      // Store refresh token in DB
+      const refreshTokenExpiryDays = parseInt(
+        (process.env.REFRESH_TOKEN_EXPIRY || "7d").replace("d", "")
+      );
+      await this.refreshTokenRepository.create({
+        rt_user_id: user.user_id,
+        rt_token: refreshToken,
+        rt_expires_at: new Date(
+          Date.now() + refreshTokenExpiryDays * 24 * 60 * 60 * 1000
+        ),
+      });
     }
 
     if (
@@ -94,22 +101,49 @@ class AuthService {
       user_details
     );
     if (!user) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.USER_DELETED);
+      throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.USER_DOES_NOT_EXIST);
     }
-    if(user?.user_admin_status === ApprovalStatus.PENDING){
-      throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.ADMIN_APPROVAL_PENDING);
+
+    // Check email verification
+    if (!user.user_email_verified) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.EMAIL_NOT_VERIFIED);
     }
+
+    // Check phone verification
+    if (!user.user_phone_verified) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.PHONE_NOT_VERIFIED);
+    }
+
+    // Check admin approval status
+    if (user.user_admin_status !== ApprovalStatus.APPROVED) {
+      if (user.user_admin_status === ApprovalStatus.PENDING) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.ADMIN_APPROVAL_PENDING);
+      }
+      if (user.user_admin_status === ApprovalStatus.REJECTED) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.USER_REJECTED);
+      }
+      if (user.user_admin_status === ApprovalStatus.BLOCKED) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.USER_BLOCKED);
+      }
+      throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.USER_NOT_APPROVED);
+    }
+
+    // Check if user is active
+    if (!user.user_active) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.USER_DEACTIVATED);
+    }
+
     const isPasswordValid = await isPasswordCorrect(
       password,
       user.user_password || ""
     );
 
-    if (!user || !isPasswordValid)
+    if (!isPasswordValid)
       throw new ApiError(
         StatusCodes.BAD_REQUEST,
         API_ERRORS.INVALID_CREDENTIALS
       );
-    // return user;
+
     return this.generateSignInResponse(
       user,
       device_name,
@@ -129,29 +163,22 @@ class AuthService {
 
     // Check if user_details contains an email or phone number
     if (isValidPhoneNumber(user_details)) {
-      // If phone number, search by phone
       user = await this.userService.checkUserExistWithEmailOrPhone(
         user_details,
         user_details
       );
 
-      // Proceed with phone OTP
       const phoneOtp = await this.otpService.getPhoneOtp(
         "9359588022",
         otp
       );
-      // Update phone OTP status
       await this.otpService.updateSms(phoneOtp.so_id, { so_is_expired: true });
     } else if (isValidEmail(user_details)) {
-      // If email, search by email
       user = await this.userService.checkUserExistWithEmailOrPhone(
         user_details,
         user_details
       );
-      // Proceed with email OTP
       const emailOtp = await this.otpService.getEmailOtp("", otp);
-
-      // Update email OTP status
       await this.otpService.updateEmail(emailOtp.eo_id, {
         eo_is_expired: true,
       });
@@ -191,10 +218,7 @@ class AuthService {
       user_details
     );
 
-    const phoneOtp = await this.otpService.getPhoneOtp(
-      "",
-      otp
-    );
+    const phoneOtp = await this.otpService.getPhoneOtp("", otp);
     const emailOtp = await this.otpService.getEmailOtp("", otp);
     await this.otpService.updateSms(phoneOtp.so_id, { so_is_expired: true });
     await this.otpService.updateEmail(emailOtp.eo_id, { eo_is_expired: true });
@@ -212,37 +236,65 @@ class AuthService {
     }
   };
 
-  // refreshToken = async (old_refresh_token: string, uld_id: string) => {
-  //   const tokenData: any = jwt.decode(old_refresh_token);
-  //   const user =
-  //     tokenData?.email && (await getUserByEmailOrPhone(tokenData?.email));
+  refreshToken = async (old_refresh_token: string) => {
+    // Decode the token to get user info
+    const tokenData: any = jwt.decode(old_refresh_token);
+    if (!tokenData || !tokenData.user_id) {
+      throw new ApiError(StatusCodes.UNAUTHORIZED, API_ERRORS.REFRESH_TOKEN_INVALID);
+    }
 
-  //   if (!user) {
-  //     throw new ApiError(StatusCodes.UNAUTHORIZED, API_ERRORS.INVALID_TOKEN);
-  //   }
+    // Look up the token in DB
+    const storedToken = await this.refreshTokenRepository.findByToken(old_refresh_token);
+    if (!storedToken) {
+      throw new ApiError(StatusCodes.UNAUTHORIZED, API_ERRORS.REFRESH_TOKEN_INVALID);
+    }
 
-  //   const userDevice = await getUserDevice(uld_id, user.user_id);
+    // Check if revoked
+    if (storedToken.rt_is_revoked) {
+      throw new ApiError(StatusCodes.UNAUTHORIZED, API_ERRORS.REFRESH_TOKEN_INVALID);
+    }
 
-  //   if (!userDevice) {
-  //     throw new ApiError(StatusCodes.UNAUTHORIZED, API_ERRORS.INVALID_ULD_ID);
-  //   }
+    // Check if expired
+    if (new Date() > storedToken.rt_expires_at) {
+      throw new ApiError(StatusCodes.UNAUTHORIZED, API_ERRORS.REFRESH_TOKEN_EXPIRED);
+    }
 
-  //   if (userDevice.uld_refresh_token !== old_refresh_token) {
-  //     throw new ApiError(StatusCodes.UNAUTHORIZED, API_ERRORS.INVALID_TOKEN);
-  //   }
+    // Revoke old token
+    await this.refreshTokenRepository.revokeByToken(old_refresh_token);
 
-  //   const access_token = generateAccessToken(user);
-  //   const refresh_token = generateRefreshToken(user);
+    // Get full user from DB
+    const user = await this.userRepository.getById(tokenData.user_id);
+    if (!user) {
+      throw new ApiError(StatusCodes.UNAUTHORIZED, API_ERRORS.INVALID_TOKEN);
+    }
 
-  //   await updateUserDevice(uld_id, user.user_id, {
-  //     access_token,
-  //     refresh_token,
-  //   });
+    // Generate new tokens
+    const access_token = generateAccessToken(user as any);
+    const refresh_token = generateRefreshToken(user as any);
 
-  //   const { user_password, ...userData } = user;
+    // Store new refresh token
+    const refreshTokenExpiryDays = parseInt(
+      (process.env.REFRESH_TOKEN_EXPIRY || "7d").replace("d", "")
+    );
+    await this.refreshTokenRepository.create({
+      rt_user_id: tokenData.user_id,
+      rt_token: refresh_token,
+      rt_expires_at: new Date(
+        Date.now() + refreshTokenExpiryDays * 24 * 60 * 60 * 1000
+      ),
+    });
 
-  //   return { ...userData, access_token, refresh_token, uld_id };
-  // };
+    return { access_token, refresh_token };
+  };
+
+  logout = async (refresh_token: string) => {
+    // Revoke the provided refresh token
+    const storedToken = await this.refreshTokenRepository.findByToken(refresh_token);
+    if (!storedToken) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.REFRESH_TOKEN_INVALID);
+    }
+    await this.refreshTokenRepository.revokeByToken(refresh_token);
+  };
 }
 
 export default AuthService;
