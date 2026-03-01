@@ -32,6 +32,7 @@ export const API_ENDPOINTS = {
 };
 
 export const API_RESPONSES = {
+  SIGN_IN: "Sign in successful!",
   SIGN_UP: "Sign up successful. Please verify your phone and email address",
   EMAIL_VERIFIED: "Email verified successfully",
   PHONE_VERIFIED: "Phone verified successfully",

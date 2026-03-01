@@ -53,7 +53,7 @@ class UserController {
         user_password: await hashPassword(data.password),
         user_primary_country_id: data.country_id,
         user_primary_phone: data.phone,
-        user_gender: data.gender,
+        user_gender: data.gender || "MALE",
       },
     );
     await this.userportfolioService.createPortfolio(user.user_id, data.portfolio_ids);

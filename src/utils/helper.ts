@@ -104,15 +104,13 @@ export const getLinkData = (
 
   const next =
     currentPage < totalPages
-      ? `${process.env.SWAGGER_URL}${apiLink}?page=${
-          currentPage + 1
-        }&page_size=${pageSize}${params}`
+      ? `${process.env.SWAGGER_URL}${apiLink}?page=${currentPage + 1
+      }&page_size=${pageSize}${params}`
       : null;
   const prev =
     currentPage > 1 && currentPage - 1 < totalPages
-      ? `${process.env.SWAGGER_URL}${apiLink}?page=${
-          currentPage - 1
-        }&page_size=${pageSize}${params}`
+      ? `${process.env.SWAGGER_URL}${apiLink}?page=${currentPage - 1
+      }&page_size=${pageSize}${params}`
       : null;
 
   return {

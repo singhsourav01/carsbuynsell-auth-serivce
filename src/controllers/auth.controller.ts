@@ -16,7 +16,6 @@ class AuthController {
   signIn = asyncHandler(async (req: Request, res: Response) => {
     const { user_details, password, device_name, device_type, fcm_token } =
       req.body;
-
     const user = await this.authService.signIn(
       user_details,
       password,
@@ -30,7 +29,7 @@ class AuthController {
       .json(
         new ApiResponse(
           StatusCodes.OK,
-          user,
+          user, API_RESPONSES.SIGN_IN
         )
       );
   });
@@ -45,7 +44,7 @@ class AuthController {
       device_type,
       fcm_token
     );
-
+    console.log
     return res
       .status(StatusCodes.OK)
       .json(

@@ -15,7 +15,7 @@ const AuthRoutes = express.Router();
 const authController = new AuthController();
 
 AuthRoutes.route(API_ENDPOINTS.SIGN_IN).post(
-  validate(loginValidations),
+  // validate(loginValidations),
   authController.signIn
 );
 AuthRoutes.route(API_ENDPOINTS.SING_IN_OTP).post(

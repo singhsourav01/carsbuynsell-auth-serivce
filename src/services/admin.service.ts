@@ -82,22 +82,22 @@ class AdminService {
         StatusCodes.BAD_REQUEST,
         API_ERRORS.USER_DOES_NOT_EXIST
       );
-    if( userExist.user_phone_verified === false &&  userExist.user_email_verified === false)
+    if (userExist.user_phone_verified === false && userExist.user_email_verified === false)
       throw new ApiError(
         StatusCodes.BAD_REQUEST,
         API_ERRORS.USER_PHONE_AND_EMAIL_NOT_VERIFIED
       );
-    if(userExist.user_email_verified === false) 
+    if (userExist.user_email_verified === false)
       throw new ApiError(
         StatusCodes.BAD_REQUEST,
         API_ERRORS.USER_EMAIL_NOT_VERIFIED
       );
-    if( userExist.user_phone_verified === false)
+    if (userExist.user_phone_verified === false)
       throw new ApiError(
         StatusCodes.BAD_REQUEST,
         API_ERRORS.USER_PHONE_NOT_VERIFIED
       );
-      
+
     if (status === ApprovalStatus.APPROVED) {
       const token = req.header("authorization");
       const userData = {
@@ -111,6 +111,9 @@ class AdminService {
         user_primary_phone: userExist.user_primary_phone,
         user_selfie_file_id: userExist.user_selfie_file_id,
         user_admin_status: ApprovalStatus.APPROVED,
+        user_active: userExist.user_active,
+        user_phone_verified: userExist.user_phone_verified,
+        user_email_verified: userExist.user_email_verified,
       };
       user = await createUser(userData, token);
       if (!user) {

@@ -132,11 +132,12 @@ class AuthService {
     if (!user.user_active) {
       throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.USER_DEACTIVATED);
     }
-
+    console.log(password, user.user_password, " check password")
     const isPasswordValid = await isPasswordCorrect(
       password,
       user.user_password || ""
     );
+    console.log(isPasswordValid, " check password")
 
     if (!isPasswordValid)
       throw new ApiError(

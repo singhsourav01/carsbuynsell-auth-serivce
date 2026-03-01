@@ -21,7 +21,7 @@ import UserRepository from "../repositories/user.repository";
 import { createUserType, updateUserType } from "../types/onboarding.types";
 import { generateAccessToken } from "../utils/helper";
 import { AuthenticatedRequest } from "../controllers/user.controller";
-import { getByEmail, getByPhone } from "../api/user.api";
+import { getByEmail, getByPhone, getUserDetailsByEmailOrPhone } from "../api/user.api";
 
 class UserService {
   userRepository: UserRepository;
@@ -52,7 +52,7 @@ class UserService {
 
   checkUserExistWithEmailOrPhone = async (email: string, phone: string) => {
     let user;
-    const userExistInUserService = false;
+    const userExistInUserService = await getUserDetailsByEmailOrPhone(email || phone);
     if (userExistInUserService) {
       return userExistInUserService;
     } else {
