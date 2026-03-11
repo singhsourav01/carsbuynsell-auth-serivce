@@ -35,7 +35,12 @@ class UserController {
           user_email: user.user_email,
           user_primary_phone: user.user_primary_phone,
           user_primary_country_id: user.user_primary_country_id,
-          user_admin_status: ApprovalStatus.PENDING,
+          user_admin_status: ApprovalStatus.APPROVED,
+          user_active: true,
+          user_phone_verified: true,
+          user_email_verified: true,
+          user_profile_image_file_id: user.user_profile_image_file_id,
+          user_selfie_file_id: user.user_selfie_file_id,
         });
         console.log(`User ${user_id} sent to user-service successfully`);
       } catch (error: any) {
@@ -152,15 +157,33 @@ class UserController {
     const emailOtp = await this.otpService.getEmailOtp(email, otp);
     const user = await this.userService.verifyEmail(userExist.user_id);
     await this.otpService.updateEmail(emailOtp.eo_id, { eo_is_expired: true });
+    if (user.user_admin_status) {
+      const token = req.header("authorization");
+      const userData = {
+        user_id: userExist.user_id,
+        user_full_name: userExist.user_full_name,
+        user_password: userExist.user_password,
+        user_email: userExist.user_email,
+        user_gender: userExist.user_gender,
+        user_profile_image_file_id: userExist.user_profile_image_file_id,
+        user_primary_country_id: userExist.user_primary_country_id,
+        user_primary_phone: userExist.user_primary_phone,
+        user_selfie_file_id: userExist.user_selfie_file_id,
+        user_admin_status: ApprovalStatus.APPROVED,
+        user_active: userExist.user_active,
+        user_phone_verified: userExist.user_phone_verified,
+        user_email_verified: userExist.user_email_verified,
+      };
+      const users = await createUser(userData, token);
+      // Check if both phone and email are verified → send to user-service
+      await this.sendToUserServiceIfFullyVerified(userExist.user_id);
 
-    // Check if both phone and email are verified → send to user-service
-    await this.sendToUserServiceIfFullyVerified(userExist.user_id);
-
-    return res
-      .status(StatusCodes.OK)
-      .json(
-        new ApiResponse(StatusCodes.OK, user, API_RESPONSES.EMAIL_VERIFIED)
-      );
+      return res
+        .status(StatusCodes.OK)
+        .json(
+          new ApiResponse(StatusCodes.OK, users, API_RESPONSES.EMAIL_VERIFIED)
+        );
+    }
   });
 
   // Once the user service will be created

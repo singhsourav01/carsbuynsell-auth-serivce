@@ -12,15 +12,15 @@ AdminRoutes.route(API_ENDPOINTS.USERS).get(
 );
 
 AdminRoutes.route(API_ENDPOINTS.USERS_BY_ID)
-  .get(authAdmin(),adminController.getUserById)
+  .get(authAdmin(), adminController.getUserById)
   .delete(authAdmin(),
-  adminController.deleteById
-);
+    adminController.deleteById
+  );
 
-AdminRoutes.route(API_ENDPOINTS.USER_STATUS).put(
-  // authAdmin(),
-  adminController.changeUserStatus
-);
+// AdminRoutes.route(API_ENDPOINTS.USER_STATUS).put(
+//   // authAdmin(),
+//   adminController.changeUserStatus
+// );
 
 AdminRoutes.route(API_ENDPOINTS.USER_PENDING_COUNT).get(
   authAdmin(),

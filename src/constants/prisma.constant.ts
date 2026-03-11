@@ -13,4 +13,3 @@ export const userSelect = {
   user_selfie_file_id: true,
   user_dob: true,
 };
-

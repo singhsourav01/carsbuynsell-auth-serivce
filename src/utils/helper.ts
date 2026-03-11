@@ -153,6 +153,7 @@ export const getEmailBodyForChangingUserStatus = (reason: string) => {
 
 export const handleAxiosError = (error: any) => {
   if (axios.isAxiosError(error)) {
+    console.log(error)
     const statusCode = error.response?.status || 500;
     const message =
       error.response?.data?.message || "User service error";

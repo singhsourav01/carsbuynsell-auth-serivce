@@ -46,23 +46,23 @@ class AdminController {
       .json(new ApiResponse(StatusCodes.OK, user, API_RESPONSES.USER_FETCHED));
   });
 
-  changeUserStatus = asyncHandler(async (req: Request, res: Response) => {
-    const { status, reason }: { status: ApprovalStatus; reason: string } =
-      req.body;
-    const { user_id } = req.params;
-    console.log(user_id, status, reason , " check all")
-    const user = await this.adminService.changeUserStatus(
-      user_id,
-      status,
-      reason,
-      req
-    );
-    return res
-      .status(StatusCodes.OK)
-      .json(
-        new ApiResponse(StatusCodes.OK, user, API_RESPONSES.USER_STATUS_UPDATED)
-      );
-  });
+  // changeUserStatus = asyncHandler(async (req: Request, res: Response) => {
+  //   const { status, reason }: { status: ApprovalStatus; reason: string } =
+  //     req.body;
+  //   const { user_id } = req.params;
+  //   console.log(user_id, status, reason , " check all")
+  //   const user = await this.adminService.changeUserStatus(
+  //     user_id,
+  //     status,
+  //     reason,
+  //     req
+  //   );
+  //   return res
+  //     .status(StatusCodes.OK)
+  //     .json(
+  //       new ApiResponse(StatusCodes.OK, user, API_RESPONSES.USER_STATUS_UPDATED)
+  //     );
+  // });
 
   getPendingUserCount = asyncHandler(async (req: Request, res: Response) => {
     const count = await this.adminService.getPendingUserCount();
