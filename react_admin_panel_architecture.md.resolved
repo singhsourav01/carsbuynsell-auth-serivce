@@ -1,0 +1,903 @@
+# React Admin Panel Architecture — AutoBid (Cars Buy & Sell)
+
+> **Generated from**: React Native Expo project `Asset-Manager` (app name: **AutoBid**)
+> **Brand**: Raj Motors — "Driving Deals, Funding Dreams"
+
+---
+
+## Part 1 — React Native Project Analysis
+
+### 1.1 Complete Folder Structure
+
+```
+Asset-Manager/
+├── app/                          # Expo Router (file-based routing)
+│   ├── _layout.tsx               # Root layout: AuthProvider, QueryClientProvider, Fonts
+│   ├── index.tsx                 # Entry redirect
+│   ├── +not-found.tsx            # 404 page
+│   ├── (auth)/                   # Auth flow (unprotected)
+│   │   ├── _layout.tsx
+│   │   ├── login.tsx             # Email/phone + password login
+│   │   ├── register.tsx          # Full registration form
+│   │   ├── verify-phone.tsx      # Phone OTP verification
+│   │   ├── verify-email.tsx      # Email OTP verification
+│   │   ├── verify-otp.tsx        # Generic OTP verification
+│   │   ├── otp.tsx               # OTP entry screen
+│   │   └── pending.tsx           # "Pending admin approval" screen
+│   ├── (tabs)/                   # Main app tabs (protected)
+│   │   ├── _layout.tsx           # Tab navigator (5 tabs)
+│   │   ├── index.tsx             # Home — featured + recent listings
+│   │   ├── live.tsx              # Live auctions list + bidding modal
+│   │   ├── buynow.tsx            # Buy-now listings with search
+│   │   ├── deals.tsx             # My Deals (won, pending, completed, lost)
+│   │   └── profile.tsx           # Profile, Sell Vehicle, Subscription, Edit
+│   └── listing/
+│       └── [id].tsx              # Vehicle detail page (dynamic route)
+├── components/
+│   ├── CountdownTimer.tsx        # Auction countdown component
+│   ├── ErrorBoundary.tsx         # React error boundary
+│   ├── ErrorFallback.tsx         # Error fallback UI
+│   ├── KeyboardAwareScrollViewCompat.tsx
+│   ├── SubscriptionModal.tsx     # Subscription plans modal (Basic/Standard/Premium)
+│   └── VehicleCard.tsx           # Reusable vehicle card (small/medium/large)
+├── constants/
+│   └── colors.ts                 # Design system color tokens
+├── contexts/
+│   └── AuthContext.tsx            # Auth state: user, token, refreshToken, login, logout
+├── lib/
+│   ├── auth.ts                   # Token storage (SecureStore), apiRequest, apiRequestDirect
+│   └── query-client.ts           # React Query client, getQueryFn, getApiUrl
+├── utils/
+│   └── formatters.ts             # formatCurrency (₹ INR), formatCountdown, formatDate
+├── server/                       # Express.js mock server (development only)
+│   ├── index.ts
+│   ├── routes.ts                 # All mock API routes
+│   └── storage.ts
+├── shared/
+│   └── schema.ts                 # Drizzle ORM schema (users table)
+└── assets/                       # Images, icons, splash screens
+```
+
+---
+
+### 1.2 Project Architecture
+
+| Aspect | Details |
+|---|---|
+| **Framework** | React Native + Expo SDK 54 |
+| **Routing** | Expo Router v6 (file-based, Stack + Tabs) |
+| **State Management** | React Context API ([AuthContext](file:///c:/Users/ganup/Downloads/Asset-Manager%20%281%29/Asset-Manager/contexts/AuthContext.tsx#19-28)) + React Query (`@tanstack/react-query`) + local state |
+| **API Client** | Custom `fetch` wrapper ([apiRequest](file:///c:/Users/ganup/Downloads/Asset-Manager%20%281%29/Asset-Manager/lib/query-client.ts#27-45), [apiRequestDirect](file:///c:/Users/ganup/Downloads/Asset-Manager%20%281%29/Asset-Manager/lib/auth.ts#102-125)) — no Axios |
+| **Data Fetching** | React Query for declarative queries ([deals.tsx](file:///c:/Users/ganup/Downloads/Asset-Manager%20%281%29/Asset-Manager/app/%28tabs%29/deals.tsx)), manual `fetch` for imperative calls |
+| **Auth Flow** | JWT + Refresh Token → SecureStore (mobile) / localStorage (web) |
+| **User Status Flow** | `PENDING_PHONE` → `PENDING_EMAIL` → `PENDING_APPROVAL` → `ACCEPTED` / `REJECTED` / `BLOCKED` |
+| **Verification** | Phone OTP → Email OTP → Admin approval |
+| **Typography** | Google Fonts — **Urbanist** (400 Regular, 500 Medium, 600 SemiBold, 700 Bold) |
+| **ORM** | Drizzle ORM with PostgreSQL ([shared/schema.ts](file:///c:/Users/ganup/Downloads/Asset-Manager%20%281%29/Asset-Manager/shared/schema.ts)) |
+| **Other libs** | Zustand (installed but unused), dayjs, expo-haptics, expo-image, react-hook-form |
+
+---
+
+### 1.3 Theme & Design System
+
+#### Color Palette
+
+| Token | Hex | Usage |
+|---|---|---|
+| `primary` | `#3D5BD9` | Buttons, links, active states, tab icons |
+| `primaryLight` | `#EEF2FF` | Light tint backgrounds |
+| `hero` | `#3D5BD9` | Hero banners, gradients |
+| `heroLight` | `#5470E8` | Gradient start |
+| `heroDark` | `#2947C4` | Gradient end |
+| `navy` | `#1C2B4A` | Logo background, dark accents |
+| `background` | `#EEF2F8` | Page background |
+| `card` | `#FFFFFF` | Card backgrounds |
+| `cardBorder` | `#E8ECF4` | Card borders |
+| `surface` | `#F3F6FC` | Secondary surfaces |
+| [text](file:///c:/Users/ganup/Downloads/Asset-Manager%20%281%29/Asset-Manager/contexts/AuthContext.tsx#19-28) | `#1A1E2E` | Primary text |
+| `textSecondary` | `#6B7280` | Secondary text |
+| `textMuted` | `#9CA3AF` | Muted/placeholder text |
+| `success` | `#10B981` | Buy Now badges, success states |
+| `danger` | `#EF4444` | Live auction dots, errors, logout |
+| `warning` | `#F59E0B` | Pending payment, notices |
+| `info` | `#3B82F6` | Information badges |
+| `inputBg` | `#F3F6FC` | Input field backgrounds |
+| `inputBorder` | `#DDE3EE` | Input field borders |
+| `actionBtn` | `#607991` | Submit/action button (auth) |
+
+#### Typography
+
+| Weight | Font | Usage |
+|---|---|---|
+| 400 | `Urbanist_400Regular` | Body text, descriptions, placeholders |
+| 500 | `Urbanist_500Medium` | Medium emphasis text |
+| 600 | `Urbanist_600SemiBold` | Labels, semi-bold text, chip text |
+| 700 | `Urbanist_700Bold` | Headings, prices, badges, buttons |
+
+#### Component Styles
+
+| Component | Radius | Shadow | Notes |
+|---|---|---|---|
+| **Card** | 16–20px | `elevation: 2-4` | White bg, 1px border `#E8ECF4` |
+| **Button (primary)** | 14px | — | Gradient `heroLight → hero`, height 54px |
+| **Button (action)** | 14px | — | Solid `#607991`, height 54px |
+| **Input** | 12–14px | — | `#F3F6FC` bg, 1px border `#DDE3EE`, height 54-56px |
+| **Badge** | 6–7px | — | Small, colored backgrounds |
+| **Chip** | 20px | — | Active: `primary` bg, white text |
+| **Modal** | 28px (top) | — | Bottom sheet style with grabber |
+
+---
+
+### 1.4 Feature Modules
+
+| Module | Mobile Screens | Key Features |
+|---|---|---|
+| **Authentication** | Login, Register, Verify Phone, Verify Email, OTP, Pending | Email/phone + password login, multi-step registration, OTP verification, pending approval |
+| **Home** | [(tabs)/index.tsx](file:///c:/Users/ganup/Downloads/Asset-Manager%20%281%29/Asset-Manager/app/%28tabs%29/deals.tsx#10-11) | Hero banner + search, quick actions, featured carousel, category chips, recent listings grid |
+| **Live Auctions** | [(tabs)/live.tsx](file:///c:/Users/ganup/Downloads/Asset-Manager%20%281%29/Asset-Manager/app/%28tabs%29/deals.tsx#10-11) | Auction list with countdown timers, bid sheet modal, auto-refresh (30s), bid placement |
+| **Buy Now** | [(tabs)/buynow.tsx](file:///c:/Users/ganup/Downloads/Asset-Manager%20%281%29/Asset-Manager/app/%28tabs%29/deals.tsx#10-11) | Fixed-price listings, search filter, buy purchase flow |
+| **Deals** | [(tabs)/deals.tsx](file:///c:/Users/ganup/Downloads/Asset-Manager%20%281%29/Asset-Manager/app/%28tabs%29/deals.tsx#10-11) | My deals list (Won/Pending Payment/Completed/Lost), stats summary |
+| **Profile** | [(tabs)/profile.tsx](file:///c:/Users/ganup/Downloads/Asset-Manager%20%281%29/Asset-Manager/app/%28tabs%29/deals.tsx#10-11) | User profile display + edit, subscription management, sell vehicle form |
+| **Listing Detail** | `listing/[id].tsx` | Image gallery, price/bid info, seller card, specs grid, buy/bid action bar |
+| **Subscriptions** | [SubscriptionModal.tsx](file:///c:/Users/ganup/Downloads/Asset-Manager%20%281%29/Asset-Manager/components/SubscriptionModal.tsx) | 3 plans (Basic ₹499, Standard ₹999, Premium ₹1999), feature comparison |
+| **Sell Vehicle** | SellSheet in [profile.tsx](file:///c:/Users/ganup/Downloads/Asset-Manager%20%281%29/Asset-Manager/app/%28tabs%29/profile.tsx) | Title, description, category, listing type (Auction/Buy Now), base price |
+
+---
+
+### 1.5 API Endpoints
+
+**Base URL**: `http://192.168.1.102:8002` (user service), `http://192.168.1.102:8000` (auth service)
+
+#### Authentication APIs (port 8000)
+
+| Method | Route | Description | Auth |
+|---|---|---|---|
+| `POST` | `/auth/signin` | Login with email/phone + password | No |
+| `POST` | `/auth/signup` | Register new user | No |
+
+#### User Service APIs (port 8002)
+
+| Method | Route | Description | Auth |
+|---|---|---|---|
+| `GET` | `/user/home` | Home page (featured, recent, categories) | No |
+| `GET` | `/user/listings?type=AUCTION` | Live auction listings | No |
+| `GET` | `/user/listings?type=BUY_NOW` | Buy-now listings | No |
+| `GET` | `/user/listings/:id` | Listing detail by ID | No |
+| `POST` | `/user/listings/:id/bid` | Place bid on auction | Yes |
+| `POST` | `/user/listings/:id/buy` | Purchase buy-now listing | Yes |
+| `GET` | `/user/users-profile` | Get user profile | Yes |
+| `PUT` | `/user/users-profile` | Update user profile (name, gender) | Yes |
+| `POST` | `/user/user-device` | Register device (FCM, tokens) | No |
+| `POST` | `/user/sell-request` | Submit vehicle for sale | Yes |
+
+#### Mock Server APIs (Express — development)
+
+| Method | Route | Description |
+|---|---|---|
+| `POST` | `/api/auth/register` | Register user |
+| `POST` | `/api/auth/verify-phone` | Verify phone OTP |
+| `POST` | `/api/auth/verify-email` | Verify email OTP |
+| `POST` | `/api/auth/resend-otp` | Resend OTP |
+| `POST` | `/api/auth/request-otp` | Request login OTP |
+| `POST` | `/api/auth/verify-phone-otp` | Verify login OTP |
+| `POST` | `/api/auth/demo-login` | Demo login |
+| `POST` | `/api/auth/logout` | Logout |
+| `GET` | `/api/user/home` | Home data |
+| `GET` | `/api/user/live` | Live auctions |
+| `POST` | `/api/user/live/:id/bid` | Place bid |
+| `GET` | `/api/user/buy-now` | Buy-now listings |
+| `POST` | `/api/user/buy-now/:id/purchase` | Purchase listing |
+| `GET` | `/api/user/deals` | User deals |
+| `GET` | `/api/user/profile` | User profile |
+| `GET` | `/api/subscriptions/me` | Current subscription |
+| `POST` | `/api/subscriptions/purchase` | Subscribe to plan |
+| `POST` | `/api/user/sell-request` | Sell request |
+
+---
+
+### 1.6 Data Models
+
+#### User
+
+```typescript
+interface User {
+  id: string;
+  fullName: string;          // user_full_name on API
+  email: string;
+  phone: string;
+  password: string;
+  gender?: string;
+  status: "PENDING_PHONE" | "PENDING_EMAIL" | "PENDING_APPROVAL" | "ACCEPTED" | "REJECTED" | "BLOCKED";
+  phoneVerified: boolean;
+  emailVerified: boolean;
+}
+```
+
+#### Listing (Vehicle)
+
+```typescript
+interface Listing {
+  lst_id: string;
+  lst_title: string;
+  lst_description?: string;
+  lst_type: "AUCTION" | "BUY_NOW";
+  lst_price: number;
+  lst_current_bid?: number;
+  lst_min_increment?: number;
+  lst_bid_count: number;
+  lst_view_count: number;
+  lst_auction_end?: string;   // ISO date
+  lst_status: string;
+  lst_category_id: string;
+  lst_created_at: string;
+  category?: { cat_id: string; cat_name: string };
+  seller?: { user_id: string; user_full_name: string };
+  images?: { url?: string; file_url?: string }[];
+}
+```
+
+#### Deal
+
+```typescript
+interface Deal {
+  id: string;
+  vehicle: string;
+  vehicleImage: string;
+  status: "WON" | "PENDING_PAYMENT" | "COMPLETED" | "LOST";
+  price: number;
+  date: string;
+  type: "AUCTION" | "BUY_NOW";
+}
+```
+
+#### Category
+
+```typescript
+interface Category {
+  cat_id: string;
+  cat_name: string;
+}
+```
+
+#### Subscription
+
+```typescript
+interface Subscription {
+  status: "ACTIVE" | "EXPIRED" | "NONE";
+  plan: "BASIC" | "STANDARD" | "PREMIUM";
+  remainingListings: number;
+  totalListings: number;
+  expiresAt: string;
+  price: number;
+}
+```
+
+#### Sell Request
+
+```typescript
+interface SellRequest {
+  requestId: string;
+  title: string;
+  description?: string;
+  category: string;
+  listingType: "AUCTION" | "BUY_NOW";
+  basePrice: number;
+  status: "PENDING_ADMIN_REVIEW" | "APPROVED" | "REJECTED";
+}
+```
+
+---
+
+## Part 2 — React Admin Panel Design
+
+### 2.1 Recommended Tech Stack
+
+| Category | Technology | Rationale |
+|---|---|---|
+| **Framework** | React 19 + Vite 6 | Matches mobile's React 19; fast HMR |
+| **Language** | TypeScript 5.x | Type-safe, matches mobile codebase |
+| **Routing** | React Router v7 | Mature, supports nested + protected routes |
+| **Styling** | Tailwind CSS v4 (per user spec) | Rapid UI development, consistent design |
+| **Data Fetching** | TanStack React Query v5 | Same library as mobile app, shared patterns |
+| **HTTP Client** | Axios | Request/response interceptors, cleaner API |
+| **State Management** | Zustand | Already installed in mobile project, lightweight |
+| **Forms** | React Hook Form + Zod | Already in mobile deps, type-safe validation |
+| **UI Library** | shadcn/ui components | Headless, Tailwind-native, fully customizable |
+| **Charts** | Recharts | Dashboard analytics & reporting |
+| **Tables** | TanStack Table v8 | Feature-rich data tables with pagination |
+| **Icons** | Lucide React | Consistent with shadcn/ui ecosystem |
+| **Dates** | dayjs | Same as mobile project |
+| **Notifications** | Sonner (toast) | Clean, modern toast notifications |
+
+---
+
+### 2.2 Admin Panel Folder Structure
+
+```
+admin-panel/
+├── public/
+│   └── favicon.ico
+├── src/
+│   ├── assets/                    # Static images, logos
+│   │   └── logo.svg
+│   ├── components/                # Shared/reusable components
+│   │   ├── ui/                    # shadcn/ui base components
+│   │   │   ├── button.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── badge.tsx
+│   │   │   ├── table.tsx
+│   │   │   ├── dialog.tsx
+│   │   │   ├── dropdown-menu.tsx
+│   │   │   ├── select.tsx
+│   │   │   ├── tabs.tsx
+│   │   │   └── ...
+│   │   ├── data-table.tsx         # Reusable data table with pagination/sort/filter
+│   │   ├── stat-card.tsx          # Dashboard stat cards
+│   │   ├── status-badge.tsx       # Status badges (Approved, Pending, etc.)
+│   │   ├── confirm-dialog.tsx     # Reusable confirmation dialogs
+│   │   ├── image-gallery.tsx      # Image preview component
+│   │   └── empty-state.tsx        # Empty state placeholder
+│   ├── layouts/
+│   │   ├── admin-layout.tsx       # Sidebar + Navbar + Content wrapper
+│   │   ├── sidebar.tsx            # Collapsible sidebar navigation
+│   │   ├── navbar.tsx             # Top navigation bar
+│   │   └── auth-layout.tsx        # Auth pages (login) layout
+│   ├── pages/                     # Route-level page components
+│   │   ├── auth/
+│   │   │   └── login.tsx
+│   │   ├── dashboard/
+│   │   │   └── index.tsx
+│   │   ├── users/
+│   │   │   ├── index.tsx          # Users list
+│   │   │   └── [id].tsx           # User detail/edit
+│   │   ├── listings/
+│   │   │   ├── index.tsx          # All listings
+│   │   │   ├── [id].tsx           # Listing detail/edit
+│   │   │   └── create.tsx         # Create new listing
+│   │   ├── auctions/
+│   │   │   ├── index.tsx          # Live auctions management
+│   │   │   └── [id].tsx           # Auction detail
+│   │   ├── deals/
+│   │   │   ├── index.tsx          # All deals/transactions
+│   │   │   └── [id].tsx           # Deal detail
+│   │   ├── categories/
+│   │   │   └── index.tsx          # Category management (CRUD)
+│   │   ├── sell-requests/
+│   │   │   ├── index.tsx          # Pending sell requests
+│   │   │   └── [id].tsx           # Review sell request
+│   │   ├── subscriptions/
+│   │   │   └── index.tsx          # Subscription management
+│   │   ├── reports/
+│   │   │   └── index.tsx          # Analytics & reports
+│   │   └── settings/
+│   │       └── index.tsx          # System settings
+│   ├── modules/                   # Feature module definitions
+│   │   ├── users/
+│   │   │   ├── api.ts             # User API calls
+│   │   │   ├── hooks.ts           # useUsers, useUser, useUpdateUser
+│   │   │   ├── types.ts           # User interfaces
+│   │   │   └── columns.tsx        # Table column definitions
+│   │   ├── listings/
+│   │   │   ├── api.ts
+│   │   │   ├── hooks.ts
+│   │   │   ├── types.ts
+│   │   │   └── columns.tsx
+│   │   ├── auctions/
+│   │   │   ├── api.ts
+│   │   │   ├── hooks.ts
+│   │   │   ├── types.ts
+│   │   │   └── columns.tsx
+│   │   ├── deals/
+│   │   │   ├── api.ts
+│   │   │   ├── hooks.ts
+│   │   │   ├── types.ts
+│   │   │   └── columns.tsx
+│   │   ├── categories/
+│   │   │   ├── api.ts
+│   │   │   ├── hooks.ts
+│   │   │   └── types.ts
+│   │   ├── sell-requests/
+│   │   │   ├── api.ts
+│   │   │   ├── hooks.ts
+│   │   │   ├── types.ts
+│   │   │   └── columns.tsx
+│   │   ├── subscriptions/
+│   │   │   ├── api.ts
+│   │   │   ├── hooks.ts
+│   │   │   └── types.ts
+│   │   └── reports/
+│   │       ├── api.ts
+│   │       └── hooks.ts
+│   ├── services/
+│   │   ├── api-client.ts          # Axios instance + interceptors
+│   │   └── auth-service.ts        # Login, logout, token management
+│   ├── store/
+│   │   ├── auth-store.ts          # Zustand: auth state (user, token)
+│   │   ├── ui-store.ts            # Zustand: sidebar state, theme
+│   │   └── index.ts
+│   ├── routes/
+│   │   ├── index.tsx              # Route definitions
+│   │   ├── protected-route.tsx    # Auth guard
+│   │   └── role-route.tsx         # Role-based route guard
+│   ├── hooks/
+│   │   ├── use-auth.ts            # Auth hooks (useAuth, useIsAdmin)
+│   │   ├── use-debounce.ts
+│   │   ├── use-pagination.ts
+│   │   └── use-toast.ts
+│   ├── theme/
+│   │   ├── colors.ts              # Color palette (from mobile)
+│   │   ├── tailwind-preset.ts     # Tailwind config preset
+│   │   └── index.ts
+│   ├── utils/
+│   │   ├── formatters.ts          # formatCurrency, formatDate (from mobile)
+│   │   ├── constants.ts           # App constants
+│   │   └── cn.ts                  # clsx + twMerge utility
+│   ├── App.tsx
+│   ├── main.tsx
+│   └── index.css                  # Tailwind directives + global styles
+├── tailwind.config.ts
+├── vite.config.ts
+├── tsconfig.json
+└── package.json
+```
+
+---
+
+### 2.3 Admin Modules — Detailed Breakdown
+
+#### 🏠 Dashboard
+
+| Item | Details |
+|---|---|
+| **Page** | `pages/dashboard/index.tsx` |
+| **Stats Cards** | Total Users, Active Listings, Live Auctions, Monthly Revenue, Pending Approvals, Deals This Week |
+| **Charts** | Revenue trend (line), Listings by category (pie), Deals by status (bar), User registrations (area) |
+| **Quick Info** | Recent sell requests, Active auctions ending soon, Pending user approvals |
+| **API** | `GET /admin/dashboard/stats`, `GET /admin/dashboard/charts` |
+
+#### 👥 User Management
+
+| Item | Details |
+|---|---|
+| **Pages** | List (`pages/users/index.tsx`), Detail/Edit (`pages/users/[id].tsx`) |
+| **Table Columns** | Avatar, Name, Email, Phone, Status (badge), Registration Date, Actions |
+| **CRUD** | View, Edit profile, Change status (Approve/Reject/Block), Delete |
+| **Filters** | By status (`PENDING_APPROVAL`, `ACCEPTED`, `REJECTED`, `BLOCKED`), search by name/email/phone |
+| **Status Actions** | Approve pending users, Block/Unblock users, Reject registrations |
+| **API** | `GET /admin/users`, `GET /admin/users/:id`, `PUT /admin/users/:id`, `PUT /admin/users/:id/status`, `DELETE /admin/users/:id` |
+
+#### 🚗 Listing Management
+
+| Item | Details |
+|---|---|
+| **Pages** | List (`pages/listings/index.tsx`), Detail/Edit (`pages/listings/[id].tsx`), Create (`pages/listings/create.tsx`) |
+| **Table Columns** | Image thumbnail, Title, Type (badge), Category, Price, Bid Count, Status, Seller, Actions |
+| **CRUD** | Create new listing, Edit details, Change status, Delete listing |
+| **Filters** | By type (AUCTION/BUY_NOW), category, status, price range, date range |
+| **API** | `GET /admin/listings`, `POST /admin/listings`, `GET /admin/listings/:id`, `PUT /admin/listings/:id`, `DELETE /admin/listings/:id` |
+
+#### ⚡ Live Auction Management
+
+| Item | Details |
+|---|---|
+| **Pages** | List (`pages/auctions/index.tsx`), Detail (`pages/auctions/[id].tsx`) |
+| **Features** | View all active auctions, see bid history, extend/end auctions, monitor countdown |
+| **Real-time** | Auto-refresh, live bid count updates |
+| **API** | `GET /admin/auctions`, `GET /admin/auctions/:id/bids`, `PUT /admin/auctions/:id/extend`, `PUT /admin/auctions/:id/end` |
+
+#### 📋 Sell Request Management
+
+| Item | Details |
+|---|---|
+| **Pages** | List (`pages/sell-requests/index.tsx`), Detail (`pages/sell-requests/[id].tsx`) |
+| **Features** | Review seller submissions, approve/reject with notes, convert to listing |
+| **Table Columns** | Title, Seller, Category, Listing Type, Base Price, Status, Submitted Date, Actions |
+| **Status Flow** | `PENDING_ADMIN_REVIEW` → `APPROVED` (creates listing) / `REJECTED` |
+| **API** | `GET /admin/sell-requests`, `PUT /admin/sell-requests/:id/approve`, `PUT /admin/sell-requests/:id/reject` |
+
+#### 🤝 Deals / Transactions
+
+| Item | Details |
+|---|---|
+| **Pages** | List (`pages/deals/index.tsx`), Detail (`pages/deals/[id].tsx`) |
+| **Table** | Vehicle, Buyer, Type, Price, Status, Date, Payment Status |
+| **Status Badges** | WON (green), PENDING_PAYMENT (amber), COMPLETED (blue), LOST (gray) |
+| **API** | `GET /admin/deals`, `GET /admin/deals/:id`, `PUT /admin/deals/:id/status` |
+
+#### 📂 Category Management
+
+| Item | Details |
+|---|---|
+| **Page** | `pages/categories/index.tsx` |
+| **CRUD** | Create, rename, delete categories |
+| **Data** | Sedan, SUV, Hatchback, Luxury, Sports, Electric (from mobile) |
+| **API** | `GET /admin/categories`, `POST /admin/categories`, `PUT /admin/categories/:id`, `DELETE /admin/categories/:id` |
+
+#### 💳 Subscription Management
+
+| Item | Details |
+|---|---|
+| **Page** | `pages/subscriptions/index.tsx` |
+| **Features** | View all user subscriptions, manage plans, modify pricing |
+| **Plans** | Basic (₹499/2 listings), Standard (₹999/4 listings), Premium (₹1999/10 listings) |
+| **API** | `GET /admin/subscriptions`, `PUT /admin/subscriptions/:id` |
+
+#### 📊 Reports & Analytics
+
+| Item | Details |
+|---|---|
+| **Page** | `pages/reports/index.tsx` |
+| **Charts** | Revenue over time, listings created vs sold, top categories, user growth, auction performance |
+| **Exports** | CSV/PDF export functionality |
+| **API** | `GET /admin/reports/revenue`, `GET /admin/reports/listings`, `GET /admin/reports/users` |
+
+#### ⚙️ Settings
+
+| Item | Details |
+|---|---|
+| **Page** | `pages/settings/index.tsx` |
+| **Sections** | App config, Default subscription plans pricing, Email/SMS templates, Admin profile |
+
+---
+
+### 2.4 Dashboard Layout Design
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  🟦 Top Navbar                                              │
+│  ┌──────────────────────────────────────────────────────────┐│
+│  │ 🔍 Search    │ 🔔 Notifications │ 👤 Admin Name ▼      ││
+│  └──────────────────────────────────────────────────────────┘│
+├─────────┬────────────────────────────────────────────────────┤
+│         │                                                    │
+│ Sidebar │  Content Area                                      │
+│         │                                                    │
+│ 🏠 Dash │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐│
+│ 👥 Users│  │ Total   │ │ Active  │ │ Live    │ │ Revenue ││
+│ 🚗 List.│  │ Users   │ │ Listings│ │ Auctions│ │ ₹XX.XL  ││
+│ ⚡ Auct. │  │ 1,234   │ │ 456     │ │ 12      │ │ Monthly ││
+│ 📋 Sell │  └─────────┘ └─────────┘ └─────────┘ └─────────┘│
+│ 🤝 Deals│                                                    │
+│ 📂 Cats │  ┌──────────────────────┐ ┌────────────────────┐  │
+│ 💳 Subs │  │  Revenue Trend       │ │  Listings by Type  │  │
+│ 📊 Rpts │  │  📈 (Line Chart)     │ │  🥧 (Pie Chart)    │  │
+│ ⚙️ Sett │  │                      │ │                    │  │
+│         │  └──────────────────────┘ └────────────────────┘  │
+│ ──────  │                                                    │
+│ 🚪 Out  │  ┌──────────────────────────────────────────────┐ │
+│         │  │  Recent Activity / Pending Approvals Table   │ │
+│         │  └──────────────────────────────────────────────┘ │
+│         │                                                    │
+├─────────┴────────────────────────────────────────────────────┤
+```
+
+**Sidebar — Role-based menu visibility:**
+
+| Menu Item | Admin | Moderator |
+|---|---|---|
+| Dashboard | ✅ | ✅ |
+| User Management | ✅ | ❌ |
+| Listings | ✅ | ✅ |
+| Live Auctions | ✅ | ✅ |
+| Sell Requests | ✅ | ✅ |
+| Deals | ✅ | ❌ |
+| Categories | ✅ | ❌ |
+| Subscriptions | ✅ | ❌ |
+| Reports | ✅ | ❌ |
+| Settings | ✅ | ❌ |
+
+---
+
+### 2.5 Theme Configuration
+
+```typescript
+// src/theme/colors.ts — Directly derived from mobile app
+export const colors = {
+  // Core brand
+  primary: {
+    DEFAULT: "#3D5BD9",
+    light: "#EEF2FF",
+    dark: "#2947C4",
+    50: "#EEF2FF",
+    100: "#D9E0FF",
+    500: "#3D5BD9",
+    600: "#2947C4",
+    700: "#1C2B4A",
+  },
+  // Semantic
+  success: "#10B981",
+  danger: "#EF4444",
+  warning: "#F59E0B",
+  info: "#3B82F6",
+  // Surfaces
+  background: "#EEF2F8",
+  card: "#FFFFFF",
+  cardBorder: "#E8ECF4",
+  surface: "#F3F6FC",
+  // Text
+  text: {
+    DEFAULT: "#1A1E2E",
+    secondary: "#6B7280",
+    muted: "#9CA3AF",
+  },
+  // Inputs
+  input: {
+    bg: "#F3F6FC",
+    border: "#DDE3EE",
+  },
+  // Misc
+  navy: "#1C2B4A",
+  hero: "#3D5BD9",
+  heroLight: "#5470E8",
+  heroDark: "#2947C4",
+  actionBtn: "#607991",
+  overlay: "rgba(28, 43, 74, 0.85)",
+} as const;
+
+// Tailwind config extension
+export const tailwindPreset = {
+  theme: {
+    extend: {
+      colors,
+      fontFamily: {
+        urbanist: ["Urbanist", "sans-serif"],
+      },
+      borderRadius: {
+        card: "16px",
+        button: "14px",
+        input: "12px",
+        badge: "6px",
+        chip: "20px",
+      },
+    },
+  },
+};
+```
+
+---
+
+### 2.6 API Layer
+
+```typescript
+// src/services/api-client.ts
+import axios from "axios";
+import { useAuthStore } from "@/store/auth-store";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8002";
+const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL || "http://localhost:8000";
+
+export const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: { "Content-Type": "application/json" },
+});
+
+export const authClient = axios.create({
+  baseURL: AUTH_BASE_URL,
+  headers: { "Content-Type": "application/json" },
+});
+
+// Request interceptor: attach token
+apiClient.interceptors.request.use((config) => {
+  const token = useAuthStore.getState().token;
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// Response interceptor: handle 401 → refresh or logout
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      const refreshToken = useAuthStore.getState().refreshToken;
+      if (refreshToken) {
+        try {
+          const res = await authClient.post("/auth/refresh", { refresh_token: refreshToken });
+          const newToken = res.data.access_token;
+          useAuthStore.getState().setToken(newToken);
+          error.config.headers.Authorization = `Bearer ${newToken}`;
+          return apiClient(error.config);
+        } catch { /* fall through to logout */ }
+      }
+      useAuthStore.getState().logout();
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);
+```
+
+```typescript
+// Example module API: src/modules/users/api.ts
+import { apiClient } from "@/services/api-client";
+import type { User, UserFilters, PaginatedResponse } from "./types";
+
+export const usersApi = {
+  getAll: (params: UserFilters) =>
+    apiClient.get<PaginatedResponse<User>>("/admin/users", { params }),
+  getById: (id: string) =>
+    apiClient.get<User>(`/admin/users/${id}`),
+  update: (id: string, data: Partial<User>) =>
+    apiClient.put<User>(`/admin/users/${id}`, data),
+  updateStatus: (id: string, status: string) =>
+    apiClient.put(`/admin/users/${id}/status`, { status }),
+  delete: (id: string) =>
+    apiClient.delete(`/admin/users/${id}`),
+};
+```
+
+```typescript
+// Example module hook: src/modules/users/hooks.ts
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { usersApi } from "./api";
+
+export function useUsers(filters: UserFilters) {
+  return useQuery({
+    queryKey: ["users", filters],
+    queryFn: () => usersApi.getAll(filters).then((r) => r.data),
+  });
+}
+
+export function useUser(id: string) {
+  return useQuery({
+    queryKey: ["users", id],
+    queryFn: () => usersApi.getById(id).then((r) => r.data),
+    enabled: !!id,
+  });
+}
+
+export function useUpdateUserStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      usersApi.updateStatus(id, status),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
+  });
+}
+```
+
+---
+
+### 2.7 Routing Structure
+
+```typescript
+// src/routes/index.tsx
+import { createBrowserRouter } from "react-router-dom";
+import { AdminLayout } from "@/layouts/admin-layout";
+import { AuthLayout } from "@/layouts/auth-layout";
+import { ProtectedRoute } from "./protected-route";
+import { RoleRoute } from "./role-route";
+
+export const router = createBrowserRouter([
+  // Auth routes
+  {
+    element: <AuthLayout />,
+    children: [
+      { path: "/login", element: <LoginPage /> },
+    ],
+  },
+  // Protected admin routes
+  {
+    element: <ProtectedRoute><AdminLayout /></ProtectedRoute>,
+    children: [
+      { path: "/", element: <DashboardPage /> },
+      { path: "/users", element: <RoleRoute roles={["admin"]}><UsersPage /></RoleRoute> },
+      { path: "/users/:id", element: <RoleRoute roles={["admin"]}><UserDetailPage /></RoleRoute> },
+      { path: "/listings", element: <ListingsPage /> },
+      { path: "/listings/create", element: <CreateListingPage /> },
+      { path: "/listings/:id", element: <ListingDetailPage /> },
+      { path: "/auctions", element: <AuctionsPage /> },
+      { path: "/auctions/:id", element: <AuctionDetailPage /> },
+      { path: "/sell-requests", element: <SellRequestsPage /> },
+      { path: "/sell-requests/:id", element: <SellRequestDetailPage /> },
+      { path: "/deals", element: <RoleRoute roles={["admin"]}><DealsPage /></RoleRoute> },
+      { path: "/deals/:id", element: <RoleRoute roles={["admin"]}><DealDetailPage /></RoleRoute> },
+      { path: "/categories", element: <RoleRoute roles={["admin"]}><CategoriesPage /></RoleRoute> },
+      { path: "/subscriptions", element: <RoleRoute roles={["admin"]}><SubscriptionsPage /></RoleRoute> },
+      { path: "/reports", element: <RoleRoute roles={["admin"]}><ReportsPage /></RoleRoute> },
+      { path: "/settings", element: <RoleRoute roles={["admin"]}><SettingsPage /></RoleRoute> },
+    ],
+  },
+]);
+```
+
+```typescript
+// src/routes/protected-route.tsx
+import { Navigate } from "react-router-dom";
+import { useAuthStore } from "@/store/auth-store";
+
+export function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { token, isLoading } = useAuthStore();
+  if (isLoading) return <LoadingSpinner />;
+  if (!token) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
+
+// src/routes/role-route.tsx
+export function RoleRoute({ children, roles }: { children: React.ReactNode; roles: string[] }) {
+  const { user } = useAuthStore();
+  if (!user || !roles.includes(user.role)) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+```
+
+---
+
+### 2.8 Example Page Structure
+
+```typescript
+// src/pages/users/index.tsx — Users List Page
+export default function UsersPage() {
+  const [filters, setFilters] = useState<UserFilters>({ page: 1, status: "all", search: "" });
+  const { data, isLoading } = useUsers(filters);
+  const updateStatus = useUpdateUserStatus();
+
+  return (
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-text font-urbanist">User Management</h1>
+          <p className="text-text-secondary text-sm">Manage registered users and approvals</p>
+        </div>
+        <Badge variant="outline">{data?.total || 0} users</Badge>
+      </div>
+
+      {/* Filters Bar */}
+      <div className="flex gap-3">
+        <SearchInput value={filters.search} onChange={...} />
+        <StatusFilter value={filters.status} onChange={...}
+          options={["all", "PENDING_APPROVAL", "ACCEPTED", "REJECTED", "BLOCKED"]} />
+      </div>
+
+      {/* Data Table */}
+      <DataTable
+        columns={userColumns}
+        data={data?.items || []}
+        isLoading={isLoading}
+        pagination={...}
+        actions={{
+          onApprove: (id) => updateStatus.mutate({ id, status: "ACCEPTED" }),
+          onReject: (id) => updateStatus.mutate({ id, status: "REJECTED" }),
+          onBlock: (id) => updateStatus.mutate({ id, status: "BLOCKED" }),
+        }}
+      />
+    </div>
+  );
+}
+```
+
+---
+
+### 2.9 Best Practices for Scalability
+
+1. **Module-based architecture** — Each feature is self-contained with `api.ts`, `hooks.ts`, `types.ts`, and `columns.tsx`
+2. **Centralized API client** — Single Axios instance with interceptors for auth, refresh, and error handling
+3. **React Query for server state** — Automatic caching, background refetch, optimistic updates
+4. **Zustand for client state** — Lightweight, no boilerplate, perfect for auth & UI state
+5. **Type-safe end-to-end** — Shared TypeScript interfaces from mobile ↔ admin panel
+6. **Reusable DataTable** — Single table component handles pagination, sorting, filtering, actions
+7. **Protected + Role-based routing** — Clean route guards composable as wrapper components
+8. **Consistent theming** — Colors and typography directly extracted from mobile app
+9. **Code splitting** — React.lazy() for page-level components, reducing initial bundle
+10. **Environment config** — `.env` files for API URLs, no hardcoded endpoints
+11. **Error boundaries** — Global error handling matching mobile's `ErrorBoundary` pattern
+12. **Toast notifications** — Consistent feedback for CRUD operations via Sonner
+
+---
+
+### 2.10 Mobile ↔ Admin Panel Consistency Map
+
+| Mobile Feature | Admin Equivalent |
+|---|---|
+| Home featured listings | Dashboard → Featured Listings section |
+| Live auctions bidding | Auctions → Monitor bids, extend/end auctions |
+| Buy Now purchase | Listings → Manage buy-now prices and availability |
+| My Deals | Deals → View all deals across all users |
+| Profile edit | Users → Edit any user's profile, change status |
+| Sell Vehicle form | Sell Requests → Review and approve/reject |
+| Subscription modal | Subscriptions → Manage plans and user subscriptions |
+| User status flow | Users → Approve/Reject/Block with status badges |
+| OTP verification | Users → View verification status per user |
+| Category chips | Categories → Full CRUD for categories |
+| Color palette | Theme → Same `#3D5BD9` primary, `#1C2B4A` navy, Urbanist font |
