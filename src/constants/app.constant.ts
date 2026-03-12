@@ -1,6 +1,6 @@
 import { ApprovalStatus } from "@prisma/client";
 
-export const PORT = 3000;
+export const PORT = 3001;
 
 export const JWT_ALGORITHM = "RS256";
 
