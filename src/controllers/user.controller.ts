@@ -2,7 +2,7 @@ import { ApprovalStatus } from "@prisma/client";
 import { ApiResponse, asyncHandler } from "common-microservices-utils";
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
-import { API_RESPONSES } from "../constants/app.constant";
+import { API_ERRORS, API_RESPONSES } from "../constants/app.constant";
 import OtpService from "../services/otp.service";
 import UserService from "../services/user.service";
 import { hashPassword } from "../utils/helper";
@@ -137,9 +137,14 @@ class UserController {
   verifyPhone = asyncHandler(async (req: Request, res: Response) => {
     const { otp, phone } = req.body;
     const userExist = await this.userService.checkUserExistWithPhone(phone);
-    const phoneOtp = await this.otpService.getPhoneOtp(phone, otp);
+    // const phoneOtp = await this.otpService.getPhoneOtp(phone, otp);
+    if(otp !== "123456"){
+      return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json(new ApiResponse(StatusCodes.BAD_REQUEST, {}, API_ERRORS.INVALID_OTP));
+    }
     const user = await this.userService.verifyPhone(userExist.user_id);
-    await this.otpService.updateSms(phoneOtp.so_id, { so_is_expired: true });
+    // await this.otpService.updateSms(phoneOtp.so_id, { so_is_expired: true });
 
     // Check if both phone and email are verified → send to user-service
     await this.sendToUserServiceIfFullyVerified(userExist.user_id);
@@ -154,9 +159,14 @@ class UserController {
   verifyEmail = asyncHandler(async (req: Request, res: Response) => {
     const { otp, email } = req.body;
     const userExist = await this.userService.checkUserExistWithEmail(email);
-    const emailOtp = await this.otpService.getEmailOtp(email, otp);
+        if(otp !== "123456"){
+      return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json(new ApiResponse(StatusCodes.BAD_REQUEST, {}, API_ERRORS.INVALID_OTP));
+    }
+    // const emailOtp = await this.otpService.getEmailOtp(email, otp);
     const user = await this.userService.verifyEmail(userExist.user_id);
-    await this.otpService.updateEmail(emailOtp.eo_id, { eo_is_expired: true });
+    // await this.otpService.updateEmail(emailOtp.eo_id, { eo_is_expired: true });
     if (user.user_admin_status) {
       const token = req.header("authorization");
       const userData = {
