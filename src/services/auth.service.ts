@@ -145,6 +145,9 @@ class AuthService {
         API_ERRORS.INVALID_CREDENTIALS
       );
 
+      user.refresh_token = generateRefreshToken(user);
+      user.access_token = generateAccessToken(user);
+
     return this.generateSignInResponse(
       user,
       device_name,
