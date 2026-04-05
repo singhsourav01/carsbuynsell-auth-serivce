@@ -59,6 +59,7 @@ class UserController {
         user_primary_country_id: data.country_id,
         user_primary_phone: data.phone,
         user_gender: data.gender || "MALE",
+        user_role: data.role || "USER",
       },
     );
     await this.userportfolioService.createPortfolio(user.user_id, data.portfolio_ids);
