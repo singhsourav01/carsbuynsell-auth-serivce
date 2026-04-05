@@ -174,6 +174,7 @@ class UserController {
         user_id: userExist.user_id,
         user_full_name: userExist.user_full_name,
         user_password: userExist.user_password,
+        user_role: userExist.user_role,
         user_email: userExist.user_email,
         user_gender: userExist.user_gender,
         user_profile_image_file_id: userExist.user_profile_image_file_id,
@@ -332,3 +333,12 @@ class UserController {
 export default UserController;
 
 
+// {
+//     "full_name": "Admin",
+//     "email": "admin@carsbuynsell.com", 
+//     "password": "Admin@123",
+//     "country_id": "91",
+//     "phone": "9898989898",
+//     "gender": "MALE",
+//     "role": "ADMIN"
+// }
