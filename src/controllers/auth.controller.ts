@@ -24,6 +24,7 @@ class AuthController {
       fcm_token
     );
 
+    console.log("Signed in user:", user)
     return res
       .status(StatusCodes.OK)
       .json(
