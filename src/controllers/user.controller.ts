@@ -160,6 +160,7 @@ class UserController {
   verifyEmail = asyncHandler(async (req: Request, res: Response) => {
     const { otp, email } = req.body;
     const userExist = await this.userService.checkUserExistWithEmail(email);
+    
         if(otp !== "123456"){
       return res
       .status(StatusCodes.BAD_REQUEST)
@@ -333,12 +334,3 @@ class UserController {
 export default UserController;
 
 
-// {
-//     "full_name": "Admin",
-//     "email": "admin@carsbuynsell.com", 
-//     "password": "Admin@123",
-//     "country_id": "91",
-//     "phone": "9898989898",
-//     "gender": "MALE",
-//     "role": "ADMIN"
-// }

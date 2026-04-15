@@ -25,6 +25,7 @@ class AuthController {
     );
     console.log(user_details, password, device_name, device_type, fcm_token, " check all")
 
+    console.log("Signed in user:", user)
     return res
       .status(StatusCodes.OK)
       .json(
