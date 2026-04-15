@@ -23,6 +23,7 @@ class AuthController {
       device_type,
       fcm_token
     );
+    console.log(user_details, password, device_name, device_type, fcm_token, " check all")
 
     return res
       .status(StatusCodes.OK)
