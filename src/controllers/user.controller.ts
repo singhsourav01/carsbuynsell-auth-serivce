@@ -59,6 +59,7 @@ class UserController {
         user_primary_country_id: data.country_id,
         user_primary_phone: data.phone,
         user_gender: data.gender || "MALE",
+        user_role: data.role || "USER",
       },
     );
     await this.userportfolioService.createPortfolio(user.user_id, data.portfolio_ids);
@@ -174,6 +175,7 @@ class UserController {
         user_id: userExist.user_id,
         user_full_name: userExist.user_full_name,
         user_password: userExist.user_password,
+        user_role: userExist.user_role,
         user_email: userExist.user_email,
         user_gender: userExist.user_gender,
         user_profile_image_file_id: userExist.user_profile_image_file_id,
@@ -332,4 +334,16 @@ class UserController {
 export default UserController;
 
 
+<<<<<<< HEAD
        
+=======
+// {
+//     "full_name": "Admin",
+//     "email": "admin@carsbuynsell.com", 
+//     "password": "Admin@123",
+//     "country_id": "91",
+//     "phone": "9898989898",
+//     "gender": "MALE",
+//     "role": "ADMIN"
+// }
+>>>>>>> 9830964f0ac8c5760737467f5a97b6e6fe95ce91
