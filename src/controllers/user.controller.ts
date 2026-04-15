@@ -334,16 +334,3 @@ class UserController {
 export default UserController;
 
 
-<<<<<<< HEAD
-       
-=======
-// {
-//     "full_name": "Admin",
-//     "email": "admin@carsbuynsell.com", 
-//     "password": "Admin@123",
-//     "country_id": "91",
-//     "phone": "9898989898",
-//     "gender": "MALE",
-//     "role": "ADMIN"
-// }
->>>>>>> 9830964f0ac8c5760737467f5a97b6e6fe95ce91
