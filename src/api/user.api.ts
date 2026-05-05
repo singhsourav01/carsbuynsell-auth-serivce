@@ -1,7 +1,7 @@
 import axios from "axios";
 import { handleAxiosError } from "../utils/helper";
 
-const USER_SERVICE_URL = process.env.USER_SERVICE_URL || "http://13.127.188.130:3002/user";
+const USER_SERVICE_URL = process.env.USER_SERVICE_URL || "http://13.235.103.86:3002/user";
 
 export const createUser = async (userData: any, token?: string) => {
   const { data } = await axios.post(
