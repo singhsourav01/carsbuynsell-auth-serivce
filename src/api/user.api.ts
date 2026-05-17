@@ -72,3 +72,21 @@ export const getByEmail = async (email: string, token?: string) => {
     handleAxiosError(error);
   }
 };
+
+
+export const sendSms = async (phone: any) => {
+  const { data } = await axios.post(
+    `${USER_SERVICE_URL}/send-sms`,
+    { phone },
+  );
+  return data?.data;
+};
+
+
+export const sendEmail = async (email: any) => {
+  const { data } = await axios.post(
+    `${USER_SERVICE_URL}/send-email`,
+    { email },
+  );
+  return data?.data;
+};

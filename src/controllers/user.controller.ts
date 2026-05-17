@@ -9,7 +9,7 @@ import { hashPassword } from "../utils/helper";
 import _ from "lodash";
 import { createUser } from "../api/user.api";
 import UserPortfolioService from "../services/userPortfolio.service";
-
+import {sendSms, sendEmail} from "../api/user.api";
 export interface AuthenticatedRequest extends Request {
   user?: any;
 }
@@ -63,21 +63,14 @@ class UserController {
       },
     );
     await this.userportfolioService.createPortfolio(user.user_id, data.portfolio_ids);
-    await this.otpService.sendPhoneOtp(
-      data.phone,
-      data.country_id,
-      user.user_id,
-      "REGISTER"
-    );
-    await this.otpService.sendEmailOtp(
-      data.email,
-      user.user_id,
-      user.user_full_name,
-      "REGISTER"
-    );
+
+    const smsResponse = await sendSms(data.phone);
+
+    await sendEmail(data.email);
+
     return res
       .status(StatusCodes.CREATED)
-      .json(new ApiResponse(StatusCodes.CREATED, user, API_RESPONSES.SIGN_UP));
+      .json(new ApiResponse(StatusCodes.CREATED, {...user, smsResponse}, API_RESPONSES.SIGN_UP));
   });
 
   getById = asyncHandler(async (req: Request, res: Response) => {
