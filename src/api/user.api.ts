@@ -77,7 +77,7 @@ export const getByEmail = async (email: string, token?: string) => {
 export const sendSms = async (phone: any) => {
   const { data } = await axios.post(
     `${USER_SERVICE_URL}/send-sms`,
-    { phone },
+    { phoneNumber: phone },
   );
   return data?.data;
 };
