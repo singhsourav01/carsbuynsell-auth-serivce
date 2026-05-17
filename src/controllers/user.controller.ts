@@ -168,8 +168,8 @@ class UserController {
         user_selfie_file_id: userExist.user_selfie_file_id,
         user_admin_status: ApprovalStatus.APPROVED,
         user_active: userExist.user_active,
-        user_phone_verified: true,
-        user_email_verified: true,
+        user_phone_verified: userExist.user_phone_verified,
+        user_email_verified: userExist.user_email_verified,
       };
       const users = await createUser(userData, token);
       // Check if both phone and email are verified → send to user-service
