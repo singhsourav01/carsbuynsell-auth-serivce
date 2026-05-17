@@ -153,9 +153,10 @@ class UserController {
   verifyEmail = asyncHandler(async (req: Request, res: Response) => {
     const { email } = req.body;
     const userExist = await this.userService.checkUserExistWithEmail(email);
-    
+    console.log(userExist, "user exist");
     // const emailOtp = await this.otpService.getEmailOtp(email, otp);
     const user = await this.userService.verifyEmail(userExist.user_id);
+    console.log(user, "user after email verify");
     // await this.otpService.updateEmail(emailOtp.eo_id, { eo_is_expired: true });
     if (user.user_admin_status) {
       const token = req.header("authorization");
