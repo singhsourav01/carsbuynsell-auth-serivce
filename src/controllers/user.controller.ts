@@ -129,14 +129,9 @@ class UserController {
   );
 
   verifyPhone = asyncHandler(async (req: Request, res: Response) => {
-    const { otp, phone } = req.body;
+    const {  phone } = req.body;
     const userExist = await this.userService.checkUserExistWithPhone(phone);
-    // const phoneOtp = await this.otpService.getPhoneOtp(phone, otp);
-    if(otp !== "123456"){
-      return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json(new ApiResponse(StatusCodes.BAD_REQUEST, {}, API_ERRORS.INVALID_OTP));
-    }
+    
     const user = await this.userService.verifyPhone(userExist.user_id);
     // await this.otpService.updateSms(phoneOtp.so_id, { so_is_expired: true });
 
