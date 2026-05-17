@@ -151,14 +151,9 @@ class UserController {
   });
 
   verifyEmail = asyncHandler(async (req: Request, res: Response) => {
-    const { otp, email } = req.body;
+    const { email } = req.body;
     const userExist = await this.userService.checkUserExistWithEmail(email);
     
-        if(otp !== "123456"){
-      return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json(new ApiResponse(StatusCodes.BAD_REQUEST, {}, API_ERRORS.INVALID_OTP));
-    }
     // const emailOtp = await this.otpService.getEmailOtp(email, otp);
     const user = await this.userService.verifyEmail(userExist.user_id);
     // await this.otpService.updateEmail(emailOtp.eo_id, { eo_is_expired: true });
