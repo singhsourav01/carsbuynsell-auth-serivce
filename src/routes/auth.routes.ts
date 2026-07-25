@@ -1,5 +1,6 @@
 import {
   loginWithOTPValidation,
+  refreshTokenValidations,
   resetPasswordValidation,
 } from "./../validations/auth.validations";
 import express from "express";
@@ -33,6 +34,9 @@ AuthRoutes.route(API_ENDPOINTS.RESET_PASSWORD).put(
 
 AuthRoutes.route(API_ENDPOINTS.LOGOUT).post(authController.logout);
 
-// AuthRoutes.route(API_ENDPOINTS.REFRESH_TOKEN).put(authController.refreshToken);
+AuthRoutes.route(API_ENDPOINTS.REFRESH_TOKEN).put(
+  validate(refreshTokenValidations),
+  authController.refreshToken
+);
 
 export default AuthRoutes;
