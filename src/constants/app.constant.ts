@@ -100,6 +100,8 @@ export const API_ERRORS = {
   USER_PHONE_AND_EMAIL_NOT_VERIFIED: "User phone number and email are not verified. Please verify both to proceed.",
   USER_EMAIL_NOT_VERIFIED: "User email is not verified. Please verify your email to proceed.",
   USER_PHONE_NOT_VERIFIED: "User phone number is not verified. Please verify your phone to proceed.",
+  USER_CANNOT_BE_PENDING_AFTER_VERIFICATION:
+    "A verified user can no longer be set to pending status.",
 };
 
 export const INTEGERS = {

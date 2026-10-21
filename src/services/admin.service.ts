@@ -97,6 +97,14 @@ class AdminService {
         StatusCodes.BAD_REQUEST,
         API_ERRORS.USER_PHONE_NOT_VERIFIED
       );
+    if (
+      status === ApprovalStatus.PENDING &&
+      userExist.user_email_verified
+    )
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        API_ERRORS.USER_CANNOT_BE_PENDING_AFTER_VERIFICATION
+      );
 
     if (status === ApprovalStatus.APPROVED) {
       const token = req.header("authorization");

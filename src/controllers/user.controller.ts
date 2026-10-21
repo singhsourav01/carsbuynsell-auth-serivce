@@ -153,10 +153,10 @@ class UserController {
     const user = await this.userService.verifyEmail(userExist.user_id);
     console.log(user, "user after email verify");
     // await this.otpService.updateEmail(emailOtp.eo_id, { eo_is_expired: true });
-    if (user.user_admin_status) {
+    if (user.user_admin_status === ApprovalStatus.APPROVED) {
       const token = req.header("authorization");
       const userData = {
-        user_id: userExist.user_id,
+        user_id: user.user_id,
         user_full_name: userExist.user_full_name,
         user_password: userExist.user_password,
         user_role: userExist.user_role,
@@ -166,14 +166,14 @@ class UserController {
         user_primary_country_id: userExist.user_primary_country_id,
         user_primary_phone: userExist.user_primary_phone,
         user_selfie_file_id: userExist.user_selfie_file_id,
-        user_admin_status: ApprovalStatus.APPROVED,
+        user_admin_status: user.user_admin_status,
         user_active: userExist.user_active,
-        user_phone_verified: userExist.user_phone_verified,
-        user_email_verified: userExist.user_email_verified,
+        user_phone_verified: user.user_phone_verified,
+        user_email_verified: user.user_email_verified,
       };
       const users = await createUser(userData, token);
       // Check if both phone and email are verified → send to user-service
-      await this.sendToUserServiceIfFullyVerified(userExist.user_id);
+      await this.sendToUserServiceIfFullyVerified(user.user_id);
 
       return res
         .status(StatusCodes.OK)
@@ -181,6 +181,10 @@ class UserController {
           new ApiResponse(StatusCodes.OK, users, API_RESPONSES.EMAIL_VERIFIED)
         );
     }
+
+    return res
+      .status(StatusCodes.OK)
+      .json(new ApiResponse(StatusCodes.OK, user, API_RESPONSES.EMAIL_VERIFIED));
   });
 
   // Once the user service will be created

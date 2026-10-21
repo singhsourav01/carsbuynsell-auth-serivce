@@ -153,14 +153,29 @@ class UserRepository {
   };
 
   verifyEmail = async (user_id: string) => {
-    return queryHandler(
-      async () =>
-        await prisma.users.update({
-          where: { user_id },
-          data: { user_email_verified: true },
-          select: userSelect,
-        })
-    );
+    return queryHandler(async () => {
+      const existingUser = await prisma.users.findUnique({
+        where: { user_id },
+        select: {
+          user_email_verified: true,
+          user_admin_status: true,
+        },
+      });
+
+      const data: updateUserType = { user_email_verified: true };
+
+      // A user must only stay pending until their email is verified.
+      // Once verified, their status must never fall back to pending.
+      if (existingUser?.user_admin_status === ApprovalStatus.PENDING) {
+        data.user_admin_status = ApprovalStatus.APPROVED;
+      }
+
+      return await prisma.users.update({
+        where: { user_id },
+        data,
+        select: userSelect,
+      });
+    });
   };
 
   verifyPhone = async (user_id: string) => {
