@@ -17,6 +17,17 @@ import {
 import { hashPassword } from "./../utils/helper";
 import OtpService from "./otp.service";
 import UserService from "./user.service";
+import { registerUserDevice } from "../api/user.api";
+
+const normalizeDeviceType = (
+  device_type?: string,
+  device_name?: string
+): "ANDROID" | "IOS" | "WEB" => {
+  const value = (device_type || "").trim().toUpperCase();
+  if (value === "ANDROID" || value === "IOS" || value === "WEB") return value;
+  if (/ios|iphone|ipad/i.test(device_name || "")) return "IOS";
+  return "ANDROID";
+};
 
 interface SignInType extends users {
   access_token?: string;
@@ -67,6 +78,24 @@ class AuthService {
       user.user_admin_status === ApprovalStatus.PENDING
     ) {
       user.access_token = generateAccessToken(user);
+    }
+
+    // Store the device + FCM token so the notification service can reach
+    // this user. Without this the token sent by the app is discarded and no
+    // push notification can be delivered.
+    if (
+      fcm_token &&
+      user.access_token &&
+      user.user_admin_status === ApprovalStatus.APPROVED
+    ) {
+      await registerUserDevice({
+        uld_user_id: user.user_id,
+        uld_fcm_token: fcm_token,
+        uld_device_name: device_name?.trim() || "Unknown Device",
+        uld_device_type: normalizeDeviceType(device_type, device_name),
+        uld_access_token: user.access_token,
+        uld_refresh_token: user.refresh_token || "",
+      });
     }
 
     if (!user.user_email_verified) {
