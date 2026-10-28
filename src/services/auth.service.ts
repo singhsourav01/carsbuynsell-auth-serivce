@@ -143,11 +143,10 @@ class AuthService {
       throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.PHONE_NOT_VERIFIED);
     }
 
-    // Check admin approval status
-    if (user.user_admin_status !== ApprovalStatus.APPROVED) {
-      if (user.user_admin_status === ApprovalStatus.PENDING) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.ADMIN_APPROVAL_PENDING);
-      }
+    // No admin approval needed: a verified email is enough to log in.
+    // Only rejected / blocked users are stopped here.
+    const awaitingApproval = user.user_admin_status === ApprovalStatus.PENDING;
+    if (user.user_admin_status !== ApprovalStatus.APPROVED && !awaitingApproval) {
       if (user.user_admin_status === ApprovalStatus.REJECTED) {
         throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.USER_REJECTED);
       }
@@ -161,18 +160,25 @@ class AuthService {
     if (!user.user_active) {
       throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.USER_DEACTIVATED);
     }
-    console.log(password, user.user_password, " check password")
     const isPasswordValid = await isPasswordCorrect(
       password,
       user.user_password || ""
     );
-    console.log(isPasswordValid, " check password")
 
     if (!isPasswordValid)
       throw new ApiError(
         StatusCodes.BAD_REQUEST,
         API_ERRORS.INVALID_CREDENTIALS
       );
+
+    // Email-verified users left PENDING (e.g. verified before
+    // auto-approval existed) are approved on their first successful login.
+    if (awaitingApproval) {
+      await this.userRepository.update(user.user_id, {
+        user_admin_status: ApprovalStatus.APPROVED,
+      });
+      user.user_admin_status = ApprovalStatus.APPROVED;
+    }
 
       user.refresh_token = generateRefreshToken(user);
       user.access_token = generateAccessToken(user);
